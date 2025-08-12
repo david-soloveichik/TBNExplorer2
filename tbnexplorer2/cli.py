@@ -14,6 +14,7 @@ from .model import TBN
 from .polymer_basis import PolymerBasisComputer
 from .normaliz import NormalizRunner, NORMALIZ_PATH
 from .coffee import COFFEERunner, COFFEE_CLI_PATH
+from .units import VALID_UNITS
 
 
 def main():
@@ -83,6 +84,13 @@ Examples:
         help=f'Path to COFFEE executable (default: {COFFEE_CLI_PATH})'
     )
     
+    parser.add_argument(
+        '--concentration-units',
+        default='nM',
+        choices=VALID_UNITS,
+        help='Concentration units for input and output (default: nM). Supported: pM, nM, uM, mM, M'
+    )
+    
     args = parser.parse_args()
     
     # Validate input file
@@ -114,7 +122,7 @@ Examples:
             print(f"Found {len(binding_site_index)} unique binding sites")
         
         # Create TBN model
-        tbn = TBN(monomers, binding_site_index)
+        tbn = TBN(monomers, binding_site_index, concentration_units=args.concentration_units)
         
         # Check star-limiting restriction
         if args.verbose:

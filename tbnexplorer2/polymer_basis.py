@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional
 from .model import TBN, Monomer
 from .normaliz import NormalizRunner
 from .coffee import COFFEERunner
+from .units import from_molar, get_unit_display_name
 
 
 class Polymer:
@@ -244,6 +245,9 @@ class PolymerBasisComputer:
             f.write(f"# TBN Polymer Matrix\n")
             f.write(f"# Number of polymers: {len(sorted_polymers)}\n")
             f.write(f"# Number of monomers: {len(self.tbn.monomers)}\n")
+            if include_concentrations:
+                unit_display = get_unit_display_name(self.tbn.concentration_units)
+                f.write(f"# Concentration units: {unit_display}\n")
             
             # Indicate what's included
             computation_status = []
@@ -279,11 +283,13 @@ class PolymerBasisComputer:
                 
                 # Add concentration if available
                 if include_concentrations and sorted_concentrations is not None:
-                    conc = sorted_concentrations[i]
+                    conc_molar = sorted_concentrations[i]
+                    # Convert from Molar to target units
+                    conc_target_units = from_molar(conc_molar, self.tbn.concentration_units)
                     # Format scientific notation properly
-                    if conc == 0:
+                    if conc_target_units == 0:
                         row.append("0.00e0")
                     else:
-                        row.append(f"{conc:.2e}")
+                        row.append(f"{conc_target_units:.2e}")
                 
                 f.write(' '.join(row) + '\n')

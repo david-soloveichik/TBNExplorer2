@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass
+from .units import to_molar
 
 
 @dataclass
@@ -69,18 +70,21 @@ class Monomer:
 class TBN:
     """Represents a complete TBN (Thermodynamics of Binding Networks) model."""
     
-    def __init__(self, monomers: List[Monomer], binding_site_index: Dict[str, int]):
+    def __init__(self, monomers: List[Monomer], binding_site_index: Dict[str, int], concentration_units: str = 'nM'):
         """
         Initialize a TBN model.
         
         Args:
             monomers: List of Monomer objects
             binding_site_index: Dictionary mapping binding site names to indices
+            concentration_units: Units for input/output concentrations (default: nM)
         """
         self.monomers = monomers
         self.binding_site_index = binding_site_index
+        self.concentration_units = concentration_units
         self._matrix_A = None
         self._concentrations = None
+        self._concentrations_molar = None
     
     @property
     def matrix_A(self) -> np.ndarray:
@@ -98,10 +102,25 @@ class TBN:
     @property
     def concentrations(self) -> Optional[np.ndarray]:
         """
-        Get the concentration vector if all monomers have concentrations.
+        Get the concentration vector in Molar units if all monomers have concentrations.
         
         Returns:
-            numpy array of concentrations or None
+            numpy array of concentrations in Molar or None
+        """
+        if self._concentrations_molar is None:
+            if all(m.concentration is not None for m in self.monomers):
+                # Convert from input units to Molar for internal processing
+                original_concentrations = np.array([m.concentration for m in self.monomers])
+                self._concentrations_molar = to_molar(original_concentrations, self.concentration_units)
+        return self._concentrations_molar
+    
+    @property
+    def concentrations_original_units(self) -> Optional[np.ndarray]:
+        """
+        Get the concentration vector in original input units if all monomers have concentrations.
+        
+        Returns:
+            numpy array of concentrations in original units or None
         """
         if self._concentrations is None:
             if all(m.concentration is not None for m in self.monomers):

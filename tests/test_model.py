@@ -143,12 +143,19 @@ class TestTBN:
         np.testing.assert_array_equal(A, expected)
     
     def test_concentrations(self):
-        """Test concentration vector."""
+        """Test concentration vector in Molar units."""
         tbn = self.create_simple_tbn()
         
+        # The concentrations property now returns values in Molar
+        # With default nM units: 100 nM = 1e-7 M, 50 nM = 5e-8 M
         concentrations = tbn.concentrations
-        expected = np.array([100.0, 50.0])
-        np.testing.assert_array_equal(concentrations, expected)
+        expected = np.array([1e-7, 5e-8])
+        np.testing.assert_array_almost_equal(concentrations, expected)
+        
+        # Test original units property
+        original_concentrations = tbn.concentrations_original_units
+        expected_original = np.array([100.0, 50.0])
+        np.testing.assert_array_equal(original_concentrations, expected_original)
     
     def test_star_limiting_valid(self):
         """Test star-limiting check for valid TBN."""

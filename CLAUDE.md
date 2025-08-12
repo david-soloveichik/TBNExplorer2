@@ -1,3 +1,4 @@
 - Always, please let me know if you have any questions prior to proceeding. Also feel free to interrupt your work to ask me questions when they come up.
 - Create unit tests and test the code you write.
-- Don't read files in ./PLANNING/
+- Don't read or modify files in ./PLANNING/
+- The desired specification is in SPECIFICATION.md. If told to implement the updated specification, compare current SPECIFICATION.md with the one in the previous git commit to see what new functionality to implement or change. (Ignore minor formatting changes in SPECIFICATION.md file itself.)
