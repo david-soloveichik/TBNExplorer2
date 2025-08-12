@@ -24,6 +24,7 @@ class TBNParser:
         binding_site_index = {}
         has_concentration = None
         line_number = 0
+        monomer_names = set()  # Track monomer names for uniqueness check
         
         with open(filepath, 'r') as f:
             for line in f:
@@ -52,9 +53,23 @@ class TBNParser:
                             "Either all monomers must have concentrations or none."
                         )
                     
-                    # Update binding site index
+                    # Check for conflicts between monomer names and binding sites
+                    if name:
+                        # Check if monomer name conflicts with existing binding sites
+                        if name in binding_site_index:
+                            raise ValueError(
+                                f"Line {line_number}: Monomer name '{name}' conflicts with binding site name"
+                            )
+                        monomer_names.add(name)
+                    
+                    # Update binding site index and check for conflicts
                     for site in binding_sites:
                         base_site = site.name
+                        # Check if binding site conflicts with existing monomer names
+                        if base_site in monomer_names:
+                            raise ValueError(
+                                f"Line {line_number}: Binding site '{base_site}' conflicts with monomer name"
+                            )
                         if base_site not in binding_site_index:
                             binding_site_index[base_site] = len(binding_site_index)
                     
@@ -96,9 +111,11 @@ class TBNParser:
             name = parts[0].strip()
             remaining = parts[1].strip()
             
-            # Validate name doesn't contain special characters
+            # Validate name doesn't contain special characters or spaces
             if any(c in name for c in ',*|:'):
                 raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain ,*|:")
+            if ' ' in name:
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain spaces")
         
         # Check for concentration (after comma)
         concentration = None

@@ -30,6 +30,10 @@ Monomers can have names which is indicated by a name following by ":" prior to t
 Monomers can have concentrations indicated by a comma followed by the concentration after the monomer specification. There are two types of .tbn files: where each monomer has a concentration or none of the monomers have a concentration. 
 Important: An error should be returned if some monomers have concentration and others not.
 
+To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
+Monomer names should not have spaces or any of the prohibited symbols ",*|:"
+
+
 # Polymers 
 A polymer is a multiset of monomers. Note that we can have a polymer (or complex) consisting of just a single monomer (we would call this a "singleton polymer").
 
@@ -69,6 +73,34 @@ We need to be able to save the polymer basis into a text file. The CLI tool `tbn
 
 The CLI tool should return to the command line the number of polymers in the polymer basis.
 
-## 2. FOR NOW WE END WITH (1), TO BE CONTINUED
-In particular, we'll deal with monomer concentrations further in later functionality.
+## 2. Compute polymer free energies
+Given the polymers in the polymer basis, we want to compute their "free energies". 
+In general, we want to implement the following: Given a matrix of polymers, with a polymer per row (ie vector of the monomer counts of that polymer), we want to compute the "free energies" of each polymer. 
 
+Intuitively, the free energy of a polymer x is dG(x) = -[number of bonds in that polymer]. 
+We exclude self-binding within a monomer from that calculation (e.g., in a monomer like {a, b, b*}, we don't count the b-b* bond). This is because this bond is always there.
+
+We can compute the number of bonds in polymer x as: (Sum[|A|.x] - Sum[A.x])/2, where |A| is the same as A but with absolute value applied to all entries, and Sum[v] sums all the elements of v. 
+Thus, intuitively, Sum[|A|.x] is the total number of binding sites in x (excluding self-binding within a monomer), and Sum[A.x] is the total excess of unstar binding sites. Subtracting the two gives twice the number of bonds formed (since each bond involves exactly 2 binding sites), so we divide by 2. 
+
+## 3. Compute equilibrium polymer concentrations
+The big picture is that we want to compute the equilibrium concentrations of all the polymers in the polymer basis. We use the command line tool COFFEE for this, with the executable `/Users/dsolov/Documents/ResearchTools/coffee/crates/coffee-cli/target/release/coffee-cli`.
+
+Please see `/Users/dsolov/Documents/ResearchTools/coffee/README.md` for COFFEE documentation. Roughly, it takes two input files: CFE and CON. 
+- The CFE file contains the following matrix: Each line corresponds to a polymer in the polymer basis (i.e., counts of monomers in that polymer), followed by the free energy of that polymer. 
+- The CON file contains the concentration of each monomer, one per line. So there should be as many lines as columns in the CFE file minus one (the free energy). The monomer concentrations should be as given in the input .tbn file.
+Use the `-o [filename]` flag for `coffee-cli` to write its output in [filename]. The output file will contain a space-separated list of polymer concentrations, in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
+
+Important: For systems of interest, the polymer basis can be quite large (hundreds of thousands of polymers). COFFEE can handle CFE files of this size. We need to make sure that our code can handle it as well.
+
+## 4. Generate output TBN polymer matrix file
+This file should be in the same format at the CFE file for `coffee-cli` described above, with an additional column for the concentration of that polymer computed by `coffee-cli`. 
+The polymers should be **sorted** in order of decreasing concentration. 
+There should also be some comments on top of the file indicating things like how many polymers there are in the polymer basis, and whether only partial computation was done (see below).
+If the original input file was `[example].tbn`, this file should be called `[example].tbnpolymat`
+
+
+# Partial computations
+If the input .tbn file does not contain monomer concentrations, then we should do computation (1) above, and still output a .tbnpolymat file as in (4), except that it would be missing the column corresponding to concentrations. 
+Additionally, we want to have command line options `--no-concentrations`, and `--no-free-energies` to disable the respective computations even if concentrations are given in the input .tbn file. 
+Note that the `--no-free-energies` option also disables the concentrations computation since it's not possible to compute the concentrations without polymer free energies. Naturally, the `--no-free-energies` option also avoids adding the free energies column to the .tbnpolymat output file.

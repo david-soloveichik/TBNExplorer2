@@ -13,6 +13,7 @@ from .parser import TBNParser
 from .model import TBN
 from .polymer_basis import PolymerBasisComputer
 from .normaliz import NormalizRunner, NORMALIZ_PATH
+from .coffee import COFFEERunner, COFFEE_CLI_PATH
 
 
 def main():
@@ -64,6 +65,24 @@ Examples:
         help='Only check star-limiting restriction, do not compute polymer basis'
     )
     
+    parser.add_argument(
+        '--no-concentrations',
+        action='store_true',
+        help='Do not compute equilibrium concentrations even if monomer concentrations are provided'
+    )
+    
+    parser.add_argument(
+        '--no-free-energies',
+        action='store_true',
+        help='Do not compute polymer free energies (also disables concentration computation)'
+    )
+    
+    parser.add_argument(
+        '--coffee-path',
+        default=COFFEE_CLI_PATH,
+        help=f'Path to COFFEE executable (default: {COFFEE_CLI_PATH})'
+    )
+    
     args = parser.parse_args()
     
     # Validate input file
@@ -71,13 +90,17 @@ Examples:
         print(f"Error: Input file '{args.input_file}' not found", file=sys.stderr)
         sys.exit(1)
     
-    # Determine output file name
+    # Determine output file names
+    input_path = Path(args.input_file)
+    base_name = input_path.stem
+    
     if args.output:
         output_file = args.output
     else:
-        input_path = Path(args.input_file)
-        base_name = input_path.stem
         output_file = str(input_path.parent / f"{base_name}-polymer-basis.txt")
+    
+    # Always generate .tbnpolymat file
+    polymat_file = str(input_path.parent / f"{base_name}.tbnpolymat")
     
     try:
         # Parse TBN file
@@ -129,13 +152,44 @@ Examples:
         if args.verbose:
             print(f"Found {len(polymers)} polymers in the basis")
         
-        # Save polymer basis
+        # Save polymer basis in original format
         computer.save_polymer_basis(polymers, output_file)
         
+        # Determine computation options
+        compute_free_energies = not args.no_free_energies
+        compute_concentrations = not args.no_concentrations and compute_free_energies
+        
+        # Check if COFFEE is available if needed
+        coffee_runner = None
+        if compute_concentrations and tbn.concentrations is not None:
+            coffee_runner = COFFEERunner(args.coffee_path)
+            if not coffee_runner.check_coffee_available():
+                print(f"Warning: COFFEE not found at '{args.coffee_path}', skipping concentration computation")
+                compute_concentrations = False
+                coffee_runner = None
+        
+        # Save .tbnpolymat file
+        computer.save_tbnpolymat(
+            polymers,
+            polymat_file,
+            compute_free_energies=compute_free_energies,
+            compute_concentrations=compute_concentrations,
+            coffee_runner=coffee_runner
+        )
+        
         # Print summary
-        print(f"Polymer basis computation complete")
+        print(f"\nPolymer basis computation complete")
         print(f"Number of polymers in basis: {len(polymers)}")
-        print(f"Results saved to: {output_file}")
+        print(f"Results saved to:")
+        print(f"  - Polymer basis: {output_file}")
+        print(f"  - Polymer matrix: {polymat_file}")
+        
+        if not compute_free_energies:
+            print("Note: Free energies not computed (--no-free-energies flag)")
+        elif tbn.concentrations is None:
+            print("Note: No monomer concentrations provided, equilibrium concentrations not computed")
+        elif not compute_concentrations:
+            print("Note: Equilibrium concentrations not computed (--no-concentrations flag or COFFEE unavailable)")
         
     except ValueError as e:
         print(f"Error parsing TBN file: {e}", file=sys.stderr)

@@ -212,3 +212,87 @@ class TestTBNParser:
         assert "c" in binding_site_index
         assert "d" in binding_site_index
         assert "e" in binding_site_index
+    
+    def test_monomer_name_with_spaces_error(self):
+        """Test that monomer names with spaces raise an error."""
+        content = "my monomer: a b c"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="cannot contain spaces"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_monomer_name_with_prohibited_chars_error(self):
+        """Test that monomer names with prohibited characters raise an error."""
+        test_cases = [
+            ("mon,omer: a b c", "cannot contain ,"),
+            ("mon*omer: a b c", "cannot contain \\*"),
+            ("mon|omer: a b c", "cannot contain \\|"),
+            ("mon:omer: a b c", "cannot contain :"),
+        ]
+        
+        for content, expected_msg in test_cases:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+                f.write(content)
+                f.flush()
+                
+                with pytest.raises(ValueError, match="cannot contain"):
+                    TBNParser.parse_file(f.name)
+                
+            os.unlink(f.name)
+    
+    def test_monomer_binding_site_name_conflict_error(self):
+        """Test that conflicting monomer and binding site names raise an error."""
+        # Monomer name conflicts with later binding site
+        content = """
+        mysite: a b c
+        d e mysite
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Binding site 'mysite' conflicts with monomer name"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        # Binding site conflicts with later monomer name
+        content = """
+        a b myname
+        myname: d e f
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Monomer name 'myname' conflicts with binding site"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_case_sensitive_names_allowed(self):
+        """Test that case differences are allowed for monomer vs binding site names."""
+        content = """
+        C: a b d
+        a b c d
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            # Should not raise error since 'C' (monomer) != 'c' (binding site)
+            monomers, binding_sites = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert len(monomers) == 2
+        assert monomers[0].name == "C"
+        assert "c" in binding_sites  # lowercase c as binding site
+        # C should not be in binding sites since it's only used as monomer name
+        assert "a" in binding_sites
+        assert "b" in binding_sites
+        assert "d" in binding_sites
