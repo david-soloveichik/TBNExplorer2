@@ -127,7 +127,7 @@ C: c1 c2, 100"""
         assert len(filter.monomers) == 8
         assert filter.polymer_data['has_free_energies'] == True
         assert filter.polymer_data['has_concentrations'] == True
-        assert filter.polymer_data['concentration_units'] == 'nM'
+        assert filter.units == 'nM'
     
     def test_missing_polymat_file(self, temp_dir):
         """Test error handling when .tbnpolymat file is missing."""

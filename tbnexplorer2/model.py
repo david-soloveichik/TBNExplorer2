@@ -1,4 +1,5 @@
 import numpy as np
+import hashlib
 from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass
 from .units import to_molar
@@ -208,6 +209,28 @@ class TBN:
             A_prime = A
         
         return A_prime, n_original
+    
+    def compute_matrix_hash(self) -> str:
+        """
+        Compute SHA256 hash of the matrix A for caching purposes.
+        
+        The hash is computed from the matrix A in a deterministic way to enable
+        caching of polymer basis computations.
+        
+        Returns:
+            Hexadecimal string representation of the hash
+        """
+        # Convert matrix to bytes in a deterministic way
+        # Use the matrix shape and flattened contents
+        matrix_data = self.matrix_A.tobytes()
+        shape_data = np.array(self.matrix_A.shape).tobytes()
+        
+        # Combine shape and matrix data
+        combined_data = shape_data + matrix_data
+        
+        # Compute SHA256 hash
+        hash_obj = hashlib.sha256(combined_data)
+        return hash_obj.hexdigest()
     
     def __str__(self):
         n_sites = len(self.binding_site_index)

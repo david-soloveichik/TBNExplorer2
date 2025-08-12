@@ -159,16 +159,25 @@ TBN File Format:
             print("Please install Normaliz or specify the correct path with --normaliz-path", file=sys.stderr)
             sys.exit(1)
         
-        # Compute polymer basis
-        if args.verbose:
-            print("Computing polymer basis...")
-            print(f"Matrix A shape: {tbn.matrix_A.shape}")
-        
+        # Try to load cached polymer basis first
         computer = PolymerBasisComputer(tbn, normaliz_runner)
-        polymers = computer.compute_polymer_basis()
+        polymers = computer.load_cached_polymer_basis(polymat_file)
         
-        if args.verbose:
-            print(f"Found {len(polymers)} polymers in the basis")
+        if polymers is not None:
+            if args.verbose:
+                print("Using cached polymer basis (matrix hashes match)")
+            print("Using cached polymer basis (matrix hashes match)")
+        else:
+            # Compute polymer basis
+            if args.verbose:
+                print("Computing polymer basis...")
+                print(f"Matrix A shape: {tbn.matrix_A.shape}")
+            print("Computing polymer basis...")
+            
+            polymers = computer.compute_polymer_basis()
+            
+            if args.verbose:
+                print(f"Found {len(polymers)} polymers in the basis")
         
         # Save polymer basis in user-friendly format if requested
         if args.user_friendly_polymer_basis:

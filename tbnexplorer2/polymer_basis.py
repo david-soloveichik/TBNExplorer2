@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from typing import List, Tuple, Optional
 from .model import TBN, Monomer
 from .normaliz import NormalizRunner
@@ -182,6 +183,57 @@ class PolymerBasisComputer:
         
         print(f"Saved polymer basis with {len(polymers)} polymers to {output_file}")
     
+    def load_cached_polymer_basis(self, polymat_file: str) -> Optional[List[Polymer]]:
+        """
+        Load cached polymer basis from .tbnpolymat file if matrix hash matches.
+        
+        Args:
+            polymat_file: Path to .tbnpolymat file
+            
+        Returns:
+            List of Polymer objects if hash matches, None otherwise
+        """
+        try:
+            if not os.path.exists(polymat_file):
+                return None
+                
+            current_hash = self.tbn.compute_matrix_hash()
+            stored_hash = None
+            polymers_data = []
+            
+            with open(polymat_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('# MATRIX-HASH:'):
+                        stored_hash = line.split(':', 1)[1].strip()
+                    elif not line.startswith('#') and line:
+                        # Data line - parse polymer counts
+                        parts = line.split()
+                        if not parts:
+                            continue
+                        
+                        # First n_monomers values are monomer counts
+                        n_monomers = len(self.tbn.monomers)
+                        if len(parts) >= n_monomers:
+                            monomer_counts = np.array([int(x) for x in parts[:n_monomers]])
+                            polymers_data.append(monomer_counts)
+            
+            # Check if hashes match
+            if stored_hash is None or stored_hash != current_hash:
+                return None
+            
+            # Convert to Polymer objects
+            polymers = []
+            for counts in polymers_data:
+                polymer = Polymer(counts, self.tbn)
+                polymers.append(polymer)
+            
+            return polymers
+            
+        except Exception:
+            # If any error occurs during loading, return None to recompute
+            return None
+    
     def save_tbnpolymat(
         self, 
         polymers: List[Polymer], 
@@ -245,6 +297,10 @@ class PolymerBasisComputer:
             f.write(f"# TBN Polymer Matrix\n")
             f.write(f"# Number of polymers: {len(sorted_polymers)}\n")
             f.write(f"# Number of monomers: {len(self.tbn.monomers)}\n")
+            
+            # Write matrix hash for caching
+            matrix_hash = self.tbn.compute_matrix_hash()
+            f.write(f"# MATRIX-HASH: {matrix_hash}\n")
             if include_concentrations:
                 unit_display = get_unit_display_name(self.tbn.concentration_units)
                 f.write(f"# Concentration units: {unit_display}\n")

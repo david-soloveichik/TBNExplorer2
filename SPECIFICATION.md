@@ -120,7 +120,7 @@ Note that the `--no-free-energies` option also disables the concentrations compu
 The concentration units are specified directly in the .tbn file using the `UNITS` keyword (see above). The monomer concentrations in the .tbn file are in the units specified by the UNITS line. These should be converted to Molar for COFFEE and then _back_ to the original units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
 
 
-# Filtering output .tbnpolymat file
+# Filtering output .tbnpolymat file with `tbnexplorer2-filter`
 The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file.
 
 We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 
@@ -147,3 +147,12 @@ First, we can limit the maximum number of polymers output with the optional `--n
 
 Second, we add an optional command line argument `--percent-limit p` (short `-p`) where p is a percent number (real-value). 
 The output should be restricted to those polymers whose concentration is above (p/100) fraction of the _total concentration_ of all polymers in the .tbnpolymat file. 
+
+
+# Caching polymer basis
+The most computationally intensive part of the pipeline is computing the polymer basis with Normaliz. Other parts, like using COFFEE, are typically much faster.
+Thus if we want to recompute polymer concentrations for new input monomer concentrations without changing what the monomers are, we should avoid re-computing the polymer basis. We do this as follows:
+
+When `tbnexplorer2` is run with an input .tbn file, we create the A matrix and find the corresponding .tbnpolymat file (using the naming rules above) if it exists. If the .tbnpolymat has the keyword: MATRIX-HASH: <hash>, we compare the hash of A with <hash>. If the hashes match, we can skip recomputing the polymer basis and instead load it from the .tbnpolymat file. Otherwise, we compute the polymer basis as normal and save the new hash. 
+
+The keyword MATRIX-HASH: <hash> should be somewhere close to the top of the .tbnpolymat file but we can include comments above or below it. The standard output of `tbnexplorer2` should indicate whether is had to re-generate the polymer basis or not (hashes matched).
