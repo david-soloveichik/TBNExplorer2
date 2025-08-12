@@ -109,3 +109,23 @@ Note that the `--no-free-energies` option also disables the concentrations compu
 # Units
 Our `tbnexplorer2` tool should take an additional command line argument `--concentration-units` which should default to "nM" (nanoMolar) if not given. Other options are "pM (picoMolar), "uM" (microMolar), "mM" (milliMolar), and "M" (Molar).
 The input .tbn file specifies the monomer concentrations in the units given by the `--concentration-units` parameter. This should be converted to Molar for COFFEE and then _back_ to the desired units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
+
+
+# Filtering output .tbnpolymat file
+The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file.
+
+We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 
+
+The next thing on the command line is a space-separated list of _monomer names_: `m1 m2 ...`
+
+The tool should output to the standard output only the polymers containing _all_ the monomers `m1 m2 ...`. If a monomer name repeats multiple times, we take this as the lower bound on the multiplicity of that monomer in the polymers to return.
+
+## Output format
+The output format should be user-friendly like in the `[example]-polymer-basis.txt` file, except that polymer concentrations are listed. 
+The order of the polymers should be in order of decreasing concentration.
+The tool should also output what fraction (percent) of the _total concentration_ of all polymers in .tbnpolymat is the sum of the concentrations of the polymers matching the filtering criteria.
+
+## Output limit
+Sometimes even with the filtering criteria, there are still too many polymers. 
+We add an optional command line argument `--percent-limit p` where p is a percent number (real-value). 
+The output should be restricted to those polymers whose concentration is above (p/100) fraction of the _total concentration_ of all polymers in the .tbnpolymat file. 

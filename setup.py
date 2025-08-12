@@ -11,6 +11,7 @@ setup(
     entry_points={
         "console_scripts": [
             "tbnexplorer2=tbnexplorer2.cli:main",
+            "tbnexplorer2-filter=tbnexplorer2.filter_cli:main",
         ],
     },
     python_requires=">=3.8",
