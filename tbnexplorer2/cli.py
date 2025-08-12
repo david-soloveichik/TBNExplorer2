@@ -24,11 +24,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Compute polymer basis for a TBN file
+  # Compute polymer basis for a TBN file (generates .tbnpolymat only)
   tbnexplorer2 example.tbn
   
-  # Specify custom output file
-  tbnexplorer2 example.tbn --output my-polymer-basis.txt
+  # Also save user-friendly polymer basis text file
+  tbnexplorer2 example.tbn --user-friendly-polymer-basis
+  
+  # Specify custom output file for user-friendly basis
+  tbnexplorer2 example.tbn --user-friendly-polymer-basis --output my-polymer-basis.txt
   
   # Use custom Normaliz path
   tbnexplorer2 example.tbn --normaliz-path /path/to/normaliz
@@ -89,6 +92,12 @@ Examples:
         default='nM',
         choices=VALID_UNITS,
         help='Concentration units for input and output (default: nM). Supported: pM, nM, uM, mM, M'
+    )
+    
+    parser.add_argument(
+        '--user-friendly-polymer-basis',
+        action='store_true',
+        help='Save user-friendly polymer basis to [input]-polymer-basis.txt file'
     )
     
     args = parser.parse_args()
@@ -160,8 +169,9 @@ Examples:
         if args.verbose:
             print(f"Found {len(polymers)} polymers in the basis")
         
-        # Save polymer basis in original format
-        computer.save_polymer_basis(polymers, output_file)
+        # Save polymer basis in user-friendly format if requested
+        if args.user_friendly_polymer_basis:
+            computer.save_polymer_basis(polymers, output_file)
         
         # Determine computation options
         compute_free_energies = not args.no_free_energies
@@ -195,7 +205,8 @@ Examples:
             print(f"Concentration units: {unit_display}")
         
         print(f"Results saved to:")
-        print(f"  - Polymer basis: {output_file}")
+        if args.user_friendly_polymer_basis:
+            print(f"  - Polymer basis: {output_file}")
         print(f"  - Polymer matrix: {polymat_file}")
         
         if not compute_free_energies:

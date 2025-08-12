@@ -66,8 +66,8 @@ monomer2: a* b*
             mock_computer_instance.compute_polymer_basis.return_value = []
             mock_computer.return_value = mock_computer_instance
             
-            # Run the CLI with the test file
-            test_args = ['tbnexplorer2', str(input_file)]
+            # Run the CLI with the test file and user-friendly flag
+            test_args = ['tbnexplorer2', str(input_file), '--user-friendly-polymer-basis']
             with patch('sys.argv', test_args):
                 try:
                     main()
@@ -109,8 +109,8 @@ monomer2: a* b*
             mock_computer_instance.compute_polymer_basis.return_value = []
             mock_computer.return_value = mock_computer_instance
             
-            # Run the CLI with explicit output file
-            test_args = ['tbnexplorer2', str(input_file), '--output', str(explicit_output)]
+            # Run the CLI with explicit output file and user-friendly flag
+            test_args = ['tbnexplorer2', str(input_file), '--user-friendly-polymer-basis', '--output', str(explicit_output)]
             with patch('sys.argv', test_args):
                 try:
                     main()
@@ -152,8 +152,8 @@ monomer2: a* b*
             mock_computer_instance.compute_polymer_basis.return_value = []
             mock_computer.return_value = mock_computer_instance
             
-            # Run the CLI
-            test_args = ['tbnexplorer2', str(input_file)]
+            # Run the CLI with user-friendly flag
+            test_args = ['tbnexplorer2', str(input_file), '--user-friendly-polymer-basis']
             with patch('sys.argv', test_args):
                 try:
                     main()
@@ -164,6 +164,103 @@ monomer2: a* b*
             mock_computer_instance.save_polymer_basis.assert_called_once()
             actual_output = mock_computer_instance.save_polymer_basis.call_args[0][1]
             self.assertEqual(actual_output, str(expected_output))
+
+
+class TestUserFriendlyPolymerBasisFlag(unittest.TestCase):
+    """Test the --user-friendly-polymer-basis flag behavior."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        # Create a temporary directory for tests
+        self.test_dir = tempfile.mkdtemp()
+        
+        # Create a simple valid TBN file content
+        self.tbn_content = """# Test TBN file
+monomer1: a b
+monomer2: a* b*
+"""
+        # Create test TBN file
+        self.input_file = Path(self.test_dir) / "test.tbn"
+        self.input_file.write_text(self.tbn_content)
+    
+    def tearDown(self):
+        """Clean up test fixtures."""
+        import shutil
+        shutil.rmtree(self.test_dir)
+    
+    def test_user_friendly_flag_saves_basis_file(self):
+        """Test that --user-friendly-polymer-basis flag causes polymer basis file to be saved."""
+        with patch('tbnexplorer2.cli.TBNParser') as mock_parser, \
+             patch('tbnexplorer2.cli.TBN') as mock_tbn, \
+             patch('tbnexplorer2.cli.NormalizRunner') as mock_normaliz, \
+             patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
+            
+            # Set up mocks
+            mock_parser.parse_file.return_value = ([], {})
+            mock_tbn_instance = MagicMock()
+            mock_tbn_instance.check_star_limiting.return_value = (True, None)
+            mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
+            mock_tbn_instance.concentrations = None
+            mock_tbn.return_value = mock_tbn_instance
+            
+            mock_normaliz_instance = MagicMock()
+            mock_normaliz_instance.check_normaliz_available.return_value = True
+            mock_normaliz.return_value = mock_normaliz_instance
+            
+            mock_computer_instance = MagicMock()
+            mock_computer_instance.compute_polymer_basis.return_value = []
+            mock_computer.return_value = mock_computer_instance
+            
+            # Run CLI with --user-friendly-polymer-basis flag
+            test_args = ['tbnexplorer2', str(self.input_file), '--user-friendly-polymer-basis']
+            with patch('sys.argv', test_args):
+                try:
+                    main()
+                except SystemExit:
+                    pass
+            
+            # Verify that save_polymer_basis was called (user-friendly file should be saved)
+            mock_computer_instance.save_polymer_basis.assert_called_once()
+            
+            # Verify that save_tbnpolymat was also called (always saved)
+            mock_computer_instance.save_tbnpolymat.assert_called_once()
+    
+    def test_no_user_friendly_flag_skips_basis_file(self):
+        """Test that without --user-friendly-polymer-basis flag, polymer basis file is not saved."""
+        with patch('tbnexplorer2.cli.TBNParser') as mock_parser, \
+             patch('tbnexplorer2.cli.TBN') as mock_tbn, \
+             patch('tbnexplorer2.cli.NormalizRunner') as mock_normaliz, \
+             patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
+            
+            # Set up mocks
+            mock_parser.parse_file.return_value = ([], {})
+            mock_tbn_instance = MagicMock()
+            mock_tbn_instance.check_star_limiting.return_value = (True, None)
+            mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
+            mock_tbn_instance.concentrations = None
+            mock_tbn.return_value = mock_tbn_instance
+            
+            mock_normaliz_instance = MagicMock()
+            mock_normaliz_instance.check_normaliz_available.return_value = True
+            mock_normaliz.return_value = mock_normaliz_instance
+            
+            mock_computer_instance = MagicMock()
+            mock_computer_instance.compute_polymer_basis.return_value = []
+            mock_computer.return_value = mock_computer_instance
+            
+            # Run CLI without --user-friendly-polymer-basis flag
+            test_args = ['tbnexplorer2', str(self.input_file)]
+            with patch('sys.argv', test_args):
+                try:
+                    main()
+                except SystemExit:
+                    pass
+            
+            # Verify that save_polymer_basis was NOT called (no user-friendly file)
+            mock_computer_instance.save_polymer_basis.assert_not_called()
+            
+            # Verify that save_tbnpolymat was called (always saved)
+            mock_computer_instance.save_tbnpolymat.assert_called_once()
 
 
 if __name__ == '__main__':
