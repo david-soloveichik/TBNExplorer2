@@ -125,6 +125,8 @@ The big picture is that often we want to know about which polymers certain monom
 
 We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 
 
+The `tbnexplorer2-filter` tool requires that the input .tbn file contains a `UNITS` keyword and monomer concentrations. If the .tbn file does not have `UNITS` specified, the tool will return an error, as it cannot function without concentration information.
+
 The next thing on the command line is a space-separated list of _monomer names_: `m1 m2 ...`
 
 The tool should output to the standard output only the polymers containing _all_ the monomers `m1 m2 ...`. If a monomer name repeats multiple times, we take this as the lower bound on the multiplicity of that monomer in the polymers to return.

@@ -74,6 +74,13 @@ class PolymerFilter:
         # Parse TBN file to get monomer information
         self.monomers, self.binding_site_index, self.units = TBNParser.parse_file(str(self.tbn_file))
         
+        # Validate that UNITS keyword exists (required for tbnexplorer2-filter)
+        if self.units is None:
+            raise ValueError(
+                f"tbnexplorer2-filter requires a .tbn file with UNITS keyword and concentrations. "
+                f"File '{self.tbn_file}' does not have UNITS specified."
+            )
+        
         # Load polymer data from .tbnpolymat file
         self.polymer_data = self._load_polymat_file()
         
@@ -104,7 +111,6 @@ class PolymerFilter:
             - 'polymers': List of polymer count arrays
             - 'free_energies': Optional array of free energies
             - 'concentrations': Optional array of concentrations
-            - 'concentration_units': Optional concentration units string
             - 'has_free_energies': Boolean indicating if free energies are present
             - 'has_concentrations': Boolean indicating if concentrations are present
         """
@@ -112,7 +118,6 @@ class PolymerFilter:
             'polymers': [],
             'free_energies': None,
             'concentrations': None,
-            'concentration_units': None,
             'has_free_energies': False,
             'has_concentrations': False
         }
@@ -123,15 +128,7 @@ class PolymerFilter:
         with open(self.polymat_file, 'r') as f:
             # Parse header to determine what columns are present
             for line in f:
-                if line.startswith('# Concentration units:'):
-                    # Extract units like "nanoMolar (nM)" -> "nM"
-                    units_str = line.split(':', 1)[1].strip()
-                    if '(' in units_str and ')' in units_str:
-                        data['concentration_units'] = units_str.split('(')[1].rstrip(')')
-                    else:
-                        # Fallback to parsing the first word
-                        data['concentration_units'] = units_str.split()[0]
-                elif line.startswith('# Columns:'):
+                if line.startswith('# Columns:'):
                     columns_str = line.split(':', 1)[1].strip()
                     data['has_free_energies'] = 'free_energy' in columns_str
                     data['has_concentrations'] = 'concentration' in columns_str
@@ -282,8 +279,8 @@ class PolymerFilter:
             matching_concentration = sum(p[3] for p in filtered_polymers if p[3] is not None)
             percentage = (matching_concentration / total_concentration * 100) if total_concentration > 0 else 0
             output_lines.append(f"# Total concentration fraction: {percentage:.2f}%")
-            if self.polymer_data['concentration_units']:
-                output_lines.append(f"# Concentration units: {self.polymer_data['concentration_units']}")
+            if self.units:
+                output_lines.append(f"# Concentration units: {self.units}")
         
         output_lines.append("#")
         
@@ -304,7 +301,7 @@ class PolymerFilter:
             
             # Add concentration if available (using nice formatting)
             if concentration is not None:
-                units = self.polymer_data['concentration_units'] or ''
+                units = self.units or ''
                 formatted_conc = format_concentration_nicely(concentration, units)
                 output_lines.append(f"Concentration: {formatted_conc}")
             

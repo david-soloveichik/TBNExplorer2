@@ -254,6 +254,38 @@ C: c1 c2, 100"""
         assert result.returncode != 0
         assert "Cannot find polymer matrix file" in result.stderr
     
+    def test_tbn_file_without_units(self, temp_dir):
+        """Test error handling for .tbn file without UNITS keyword."""
+        # Create .tbn file without UNITS keyword
+        tbn_content = """# TBN file without UNITS
+B: b1 b2
+a1* a2* b1* b2*
+a1 a2 b1 b2 c1"""
+        
+        tbn_file = temp_dir / "no_units.tbn"
+        tbn_file.write_text(tbn_content)
+        
+        # Also create a dummy .tbnpolymat file to avoid the missing file error
+        polymat_content = """# TBN Polymer Matrix
+# Number of polymers: 1
+# Number of monomers: 3
+# Columns: monomer_counts[1..3]
+#
+1 0 0"""
+        
+        polymat_file = temp_dir / "no_units.tbnpolymat"
+        polymat_file.write_text(polymat_content)
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), 'B'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode != 0
+        assert "tbnexplorer2-filter requires a .tbn file with UNITS keyword and concentrations" in result.stderr
+        assert "does not have UNITS specified" in result.stderr
+    
     def test_nonexistent_monomer(self, sample_files):
         """Test filtering with non-existent monomer name."""
         tbn_file, _ = sample_files
