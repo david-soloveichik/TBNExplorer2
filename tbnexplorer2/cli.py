@@ -75,8 +75,9 @@ Examples:
     if args.output:
         output_file = args.output
     else:
-        base_name = Path(args.input_file).stem
-        output_file = f"{base_name}-polymer-basis.txt"
+        input_path = Path(args.input_file)
+        base_name = input_path.stem
+        output_file = str(input_path.parent / f"{base_name}-polymer-basis.txt")
     
     try:
         # Parse TBN file
