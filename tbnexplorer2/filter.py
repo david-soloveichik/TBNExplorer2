@@ -11,6 +11,53 @@ from .parser import TBNParser
 from .model import TBN, Monomer
 
 
+def format_concentration_nicely(value: float, units: str) -> str:
+    """
+    Format concentration value nicely without scientific notation where possible.
+    
+    Args:
+        value: Concentration value
+        units: Concentration units (e.g., 'nM', 'uM', 'mM', 'M', 'pM')
+        
+    Returns:
+        Nicely formatted string like "99.9 nM" instead of "9.99e+01 nM"
+    """
+    if value == 0:
+        return f"0.00 {units}"
+    
+    # Use abs value for formatting, preserve sign separately
+    abs_value = abs(value)
+    sign = "-" if value < 0 else ""
+    
+    # For very small values (< 0.001), use scientific notation
+    if abs_value < 0.001:
+        return f"{sign}{abs_value:.2e} {units}"
+    # For values between 0.001 and 0.01, show 3 significant figures after decimal
+    elif abs_value < 0.01:
+        return f"{sign}{abs_value:.4f} {units}"
+    # For values between 0.01 and 0.1, show 3 significant figures after decimal  
+    elif abs_value < 0.1:
+        return f"{sign}{abs_value:.3f} {units}"
+    # For values between 0.1 and 1, show 2 decimal places
+    elif abs_value < 1:
+        return f"{sign}{abs_value:.2f} {units}"
+    # For values between 1 and 10, show 2 decimal places
+    elif abs_value < 10:
+        return f"{sign}{abs_value:.2f} {units}"
+    # For values between 10 and 100, show 1 decimal place
+    elif abs_value < 100:
+        return f"{sign}{abs_value:.1f} {units}"
+    # For values between 100 and 1000, show 1 decimal place
+    elif abs_value < 1000:
+        return f"{sign}{abs_value:.1f} {units}"
+    # For values between 1000 and 10000, show no decimal places
+    elif abs_value < 10000:
+        return f"{sign}{abs_value:.0f} {units}"
+    # For very large values, use scientific notation
+    else:
+        return f"{sign}{abs_value:.2e} {units}"
+
+
 class PolymerFilter:
     """Filters polymers based on monomer name criteria."""
     
@@ -237,16 +284,13 @@ class PolymerFilter:
                         # Unnamed monomer - show binding sites
                         output_lines.append(f"{count} | {sites_str}")
             
-            # Add concentration if available
+            # Add concentration if available (using nice formatting)
             if concentration is not None:
-                if concentration == 0:
-                    output_lines.append(f"Concentration: 0.00e0 {self.polymer_data['concentration_units'] or ''}")
-                else:
-                    output_lines.append(f"Concentration: {concentration:.2e} {self.polymer_data['concentration_units'] or ''}")
+                units = self.polymer_data['concentration_units'] or ''
+                formatted_conc = format_concentration_nicely(concentration, units)
+                output_lines.append(f"Concentration: {formatted_conc}")
             
-            # Add free energy if available
-            if free_energy is not None:
-                output_lines.append(f"Free energy: {free_energy}")
+            # Note: Free energy is not included in output to save space
             
             output_lines.append("")  # Empty line between polymers
         

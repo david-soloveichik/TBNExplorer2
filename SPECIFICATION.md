@@ -124,6 +124,8 @@ The tool should output to the standard output only the polymers containing _all_
 The output format should be user-friendly like in the `[example]-polymer-basis.txt` file, except that polymer concentrations are listed. 
 The order of the polymers should be in order of decreasing concentration.
 The tool should also output what fraction (percent) of the _total concentration_ of all polymers in .tbnpolymat is the sum of the concentrations of the polymers matching the filtering criteria.
+To save space, we should not output the free energies of the complexes.
+Also, let's format the concentrations "nicely": i.e., instead of "9.99e+01 nM" we should say "99.9 nM"
 
 ## Output limit
 Sometimes even with the filtering criteria, there are still too many polymers. 

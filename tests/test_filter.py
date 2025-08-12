@@ -7,7 +7,61 @@ import tempfile
 import shutil
 from pathlib import Path
 import numpy as np
-from tbnexplorer2.filter import PolymerFilter
+from tbnexplorer2.filter import PolymerFilter, format_concentration_nicely
+
+
+class TestFormatConcentrationNicely:
+    """Test the nice concentration formatting function."""
+    
+    def test_zero_value(self):
+        """Test formatting of zero concentration."""
+        assert format_concentration_nicely(0, 'nM') == '0.00 nM'
+        assert format_concentration_nicely(0, 'uM') == '0.00 uM'
+    
+    def test_very_small_values(self):
+        """Test formatting of very small values (<0.001)."""
+        assert format_concentration_nicely(1e-5, 'nM') == '1.00e-05 nM'
+        assert format_concentration_nicely(5.23e-10, 'nM') == '5.23e-10 nM'
+    
+    def test_small_values(self):
+        """Test formatting of small values (0.001-1)."""
+        assert format_concentration_nicely(0.001, 'nM') == '0.0010 nM'
+        assert format_concentration_nicely(0.0056, 'nM') == '0.0056 nM'
+        assert format_concentration_nicely(0.023, 'nM') == '0.023 nM'
+        assert format_concentration_nicely(0.12, 'nM') == '0.12 nM'
+        assert format_concentration_nicely(0.5, 'nM') == '0.50 nM'
+    
+    def test_medium_values(self):
+        """Test formatting of medium values (1-1000)."""
+        assert format_concentration_nicely(1.5, 'nM') == '1.50 nM'
+        assert format_concentration_nicely(9.99, 'nM') == '9.99 nM'
+        assert format_concentration_nicely(15.3, 'nM') == '15.3 nM'
+        assert format_concentration_nicely(99.9, 'nM') == '99.9 nM'
+        assert format_concentration_nicely(150.5, 'nM') == '150.5 nM'
+        assert format_concentration_nicely(999.9, 'nM') == '999.9 nM'
+    
+    def test_large_values(self):
+        """Test formatting of large values (1000-10000)."""
+        assert format_concentration_nicely(1234, 'nM') == '1234 nM'
+        assert format_concentration_nicely(5678.9, 'nM') == '5679 nM'
+        assert format_concentration_nicely(9999, 'nM') == '9999 nM'
+    
+    def test_very_large_values(self):
+        """Test formatting of very large values (>10000)."""
+        assert format_concentration_nicely(15000, 'nM') == '1.50e+04 nM'
+        assert format_concentration_nicely(1.23e8, 'nM') == '1.23e+08 nM'
+    
+    def test_negative_values(self):
+        """Test formatting of negative values (shouldn't happen but handle gracefully)."""
+        assert format_concentration_nicely(-10.5, 'nM') == '-10.5 nM'
+        assert format_concentration_nicely(-0.001, 'nM') == '-0.0010 nM'
+    
+    def test_different_units(self):
+        """Test formatting works with different units."""
+        assert format_concentration_nicely(100, 'pM') == '100.0 pM'
+        assert format_concentration_nicely(100, 'uM') == '100.0 uM'
+        assert format_concentration_nicely(100, 'mM') == '100.0 mM'
+        assert format_concentration_nicely(100, 'M') == '100.0 M'
 
 
 class TestPolymerFilter:
@@ -197,7 +251,8 @@ C: c1 c2, 100"""
         assert "# Concentration units: nM" in output
         assert "# Polymer 1" in output
         assert "Concentration:" in output
-        assert "Free energy:" in output
+        # Free energy is no longer included in output to save space
+        assert "Free energy:" not in output
     
     def test_format_output_with_percent_limit(self, sample_tbn_file, sample_polymat_file):
         """Test output formatting with percent limit."""
@@ -207,6 +262,22 @@ C: c1 c2, 100"""
         output = filter.format_output(results, ['B'], percent_limit=5.0)
         
         assert "# Percent limit: 5.0%" in output
+    
+    def test_nice_concentration_formatting_in_output(self, sample_tbn_file, sample_polymat_file):
+        """Test that concentrations are nicely formatted in output."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        # Get polymers with concentrations that span different ranges
+        results = filter.filter_by_monomers(['C'])
+        output = filter.format_output(results, ['C'])
+        
+        # Check for nice formatting of concentrations
+        # From the sample data: 9.99e+01 should become "99.9 nM"
+        assert "99.9 nM" in output
+        # 1.22e-01 should become "0.12 nM"
+        assert "0.12 nM" in output
+        # Very small values should still use scientific notation
+        assert "1.48e-04 nM" in output
     
     def test_polymat_without_concentrations(self, temp_dir):
         """Test handling .tbnpolymat file without concentrations."""
