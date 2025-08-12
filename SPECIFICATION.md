@@ -42,6 +42,11 @@ Important: An error should be returned if UNITS is present but some monomers lac
 To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
 Monomer names should not have spaces or any of the prohibited symbols ",*|:", and cannot be reserved keywords (currently: UNITS).
 
+## Monomer repetition:
+The same monomer could occur multiple times in the .tbn file. 
+- Without UNITS: Treat the two identical monomers independently 
+- With UNITS: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
+
 
 # Polymers 
 A polymer is a multiset of monomers. Note that we can have a polymer (or complex) consisting of just a single monomer (we would call this a "singleton polymer").

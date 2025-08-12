@@ -1,4 +1,5 @@
 import re
+import numpy as np
 from typing import List, Tuple, Optional, Dict
 from .model import Monomer, BindingSite
 
@@ -72,7 +73,7 @@ class TBNParser:
                     continue
                 
                 # Parse the line
-                monomer_data = TBNParser._parse_monomer_line(line, line_number)
+                monomer_data = TBNParser._parse_monomer_line(line, line_number, units)
                 if monomer_data:
                     name, binding_sites, concentration = monomer_data
                     
@@ -122,10 +123,14 @@ class TBNParser:
         if not monomers:
             raise ValueError("No valid monomers found in file")
         
+        # Handle monomer repetition when UNITS is present
+        if units is not None:
+            monomers = TBNParser._aggregate_identical_monomers(monomers, binding_site_index)
+        
         return monomers, binding_site_index, units
     
     @staticmethod
-    def _parse_monomer_line(line: str, line_number: int) -> Optional[Tuple[Optional[str], List[BindingSite], Optional[float]]]:
+    def _parse_monomer_line(line: str, line_number: int, units: Optional[str] = None) -> Optional[Tuple[Optional[str], List[BindingSite], Optional[float]]]:
         """
         Parse a single monomer line.
         
@@ -134,6 +139,7 @@ class TBNParser:
         Args:
             line: Line to parse
             line_number: Line number for error reporting
+            units: Units specification (allows negative concentrations if present)
             
         Returns:
             Tuple of (name or None, list of BindingSite objects, concentration or None)
@@ -161,7 +167,8 @@ class TBNParser:
             remaining = parts[0].strip()
             try:
                 concentration = float(parts[1].strip())
-                if concentration < 0:
+                # Only disallow negative concentrations when UNITS is not present
+                if concentration < 0 and units is None:
                     raise ValueError(f"Line {line_number}: Negative concentration not allowed")
             except ValueError as e:
                 if "Negative concentration" in str(e):
@@ -193,3 +200,66 @@ class TBNParser:
             binding_sites.append(BindingSite(base_name, is_star))
         
         return name, binding_sites, concentration
+    
+    @staticmethod
+    def _aggregate_identical_monomers(monomers: List[Monomer], binding_site_index: Dict[str, int]) -> List[Monomer]:
+        """
+        Aggregate identical monomers by summing their concentrations.
+        
+        Two monomers are considered identical if they have the same binding sites
+        (order-independent comparison using vector representation).
+        
+        Args:
+            monomers: List of monomers to aggregate
+            binding_site_index: Dictionary mapping binding site names to indices
+            
+        Returns:
+            List of aggregated monomers with summed concentrations
+            
+        Raises:
+            ValueError: If any final aggregated concentration is negative
+        """
+        if not monomers:
+            return monomers
+            
+        # Group monomers by their vector representation (which is order-independent)
+        vector_to_monomers = {}
+        
+        for monomer in monomers:
+            vector = monomer.to_vector(binding_site_index)
+            vector_key = tuple(vector)  # Convert to tuple for use as dict key
+            
+            if vector_key not in vector_to_monomers:
+                vector_to_monomers[vector_key] = []
+            vector_to_monomers[vector_key].append(monomer)
+        
+        # Aggregate concentrations for identical monomers
+        aggregated_monomers = []
+        
+        for vector_key, monomer_group in vector_to_monomers.items():
+            if len(monomer_group) == 1:
+                # No duplicates, keep as-is
+                aggregated_monomers.append(monomer_group[0])
+            else:
+                # Sum concentrations of identical monomers
+                total_concentration = sum(m.concentration for m in monomer_group)
+                
+                # Check for negative final concentration
+                if total_concentration < 0:
+                    raise ValueError(
+                        f"Negative final concentration ({total_concentration}) after aggregating "
+                        f"identical monomers: {monomer_group[0].get_binding_sites_str()}"
+                    )
+                
+                # Create aggregated monomer using the first occurrence's properties
+                # but with summed concentration
+                first_monomer = monomer_group[0]
+                aggregated_monomer = Monomer(
+                    name=first_monomer.name,
+                    binding_sites=first_monomer.binding_sites,
+                    concentration=total_concentration,
+                    original_line=f"# Aggregated from {len(monomer_group)} identical monomers"
+                )
+                aggregated_monomers.append(aggregated_monomer)
+        
+        return aggregated_monomers
