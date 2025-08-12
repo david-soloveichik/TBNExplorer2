@@ -14,7 +14,7 @@ from .model import TBN
 from .polymer_basis import PolymerBasisComputer
 from .normaliz import NormalizRunner, NORMALIZ_PATH
 from .coffee import COFFEERunner, COFFEE_CLI_PATH
-from .units import VALID_UNITS
+from .units import VALID_UNITS, get_unit_display_name
 
 
 def main():
@@ -188,6 +188,12 @@ Examples:
         # Print summary
         print(f"\nPolymer basis computation complete")
         print(f"Number of polymers in basis: {len(polymers)}")
+        
+        # Show concentration units information only if concentrations are provided
+        if tbn.concentrations is not None:
+            unit_display = get_unit_display_name(args.concentration_units)
+            print(f"Concentration units: {unit_display}")
+        
         print(f"Results saved to:")
         print(f"  - Polymer basis: {output_file}")
         print(f"  - Polymer matrix: {polymat_file}")
