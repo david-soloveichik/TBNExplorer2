@@ -1,0 +1,11 @@
+# TBN example with concentrations for all monomers
+# All monomers must have concentrations
+
+# Named monomer with concentration
+monomer1: a a* b2 b1, 100
+
+# Unnamed monomer with concentration 
+b2* b2* b1 b1, 75.5
+
+# Another monomer with concentration
+a b2* b1, 50.7

@@ -1,0 +1,8 @@
+# Balanced TBN example - satisfies star-limiting restriction
+# Each binding site has equal star and unstar counts
+
+# Monomers without concentrations (will use unit concentrations)
+A: a b c
+B: a* b* c*
+C: d d e
+D: d* d* e*

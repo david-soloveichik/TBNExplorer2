@@ -1,0 +1,7 @@
+# Valid TBN with concentrations that satisfies star-limiting
+# Each binding site has at least as many unstar as star
+
+MA: a b, 100
+MB: a* b*, 50
+MC: c d, 75
+MD: c* d*, 60

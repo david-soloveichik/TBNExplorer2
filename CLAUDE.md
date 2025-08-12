@@ -1,0 +1,3 @@
+- Always, please let me know if you have any questions prior to proceeding. Also feel free to interrupt your work to ask me questions when they come up.
+- Create unit tests and test the code you write.
+- Don't read files in ./PLANNING/
