@@ -88,8 +88,8 @@ The big picture is that we want to compute the equilibrium concentrations of all
 
 Please see `/Users/dsolov/Documents/ResearchTools/coffee/README.md` for COFFEE documentation. Roughly, it takes two input files: CFE and CON. 
 - The CFE file contains the following matrix: Each line corresponds to a polymer in the polymer basis (i.e., counts of monomers in that polymer), followed by the free energy of that polymer. 
-- The CON file contains the concentration of each monomer, one per line. So there should be as many lines as columns in the CFE file minus one (the free energy). The monomer concentrations should be as given in the input .tbn file.
-Use the `-o [filename]` flag for `coffee-cli` to write its output in [filename]. The output file will contain a space-separated list of polymer concentrations, in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
+- The CON file contains the concentration of each monomer, one per line. So there should be as many lines as columns in the CFE file minus one (the free energy). The monomer concentrations should be as given in the input .tbn file, _in units of Molar_ (see below).
+Use the `-o [filename]` flag for `coffee-cli` to write its output in [filename]. The output file will contain a space-separated list of polymer concentrations _in units of Molar_ (see below), in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
 
 Important: For systems of interest, the polymer basis can be quite large (hundreds of thousands of polymers). COFFEE can handle CFE files of this size. We need to make sure that our code can handle it as well.
 
@@ -104,3 +104,8 @@ If the original input file was `[example].tbn`, this file should be called `[exa
 If the input .tbn file does not contain monomer concentrations, then we should do computation (1) above, and still output a .tbnpolymat file as in (4), except that it would be missing the column corresponding to concentrations. 
 Additionally, we want to have command line options `--no-concentrations`, and `--no-free-energies` to disable the respective computations even if concentrations are given in the input .tbn file. 
 Note that the `--no-free-energies` option also disables the concentrations computation since it's not possible to compute the concentrations without polymer free energies. Naturally, the `--no-free-energies` option also avoids adding the free energies column to the .tbnpolymat output file.
+
+
+# Units
+Our `tbnexplorer2` tool should take an additional command line argument `--concentration-units` which should default to "nM" (nanoMolar) if not given. Other options are "pM (picoMolar), "uM" (microMolar), "mM" (milliMolar), and "M" (Molar).
+The input .tbn file specifies the monomer concentrations in the units given by the `--concentration-units` parameter. This should be converted to Molar for COFFEE and then _back_ to the desired units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
