@@ -7,7 +7,7 @@ class TBNParser:
     """Parser for TBN (Thermodynamics of Binding Networks) input files."""
     
     @staticmethod
-    def parse_file(filepath: str) -> Tuple[List[Monomer], Dict[str, int]]:
+    def parse_file(filepath: str) -> Tuple[List[Monomer], Dict[str, int], Optional[str]]:
         """
         Parse a TBN file and extract monomers with their concentrations.
         
@@ -15,14 +15,42 @@ class TBNParser:
             filepath: Path to the TBN file
             
         Returns:
-            Tuple of (list of Monomer objects, dict of binding site to index)
+            Tuple of (list of Monomer objects, dict of binding site to index, concentration units or None)
             
         Raises:
-            ValueError: If file format is invalid or mixing concentration specifications
+            ValueError: If file format is invalid or UNITS/concentration specifications are inconsistent
         """
+        # First pass: scan for UNITS keyword
+        units = None
+        with open(filepath, 'r') as f:
+            for line_number, line in enumerate(f, 1):
+                # Remove comments
+                if '#' in line:
+                    line = line[:line.index('#')]
+                line = line.strip()
+                
+                # Skip empty lines
+                if not line:
+                    continue
+                
+                # Check for UNITS keyword
+                if line.startswith('UNITS:'):
+                    if units is not None:
+                        raise ValueError(f"Line {line_number}: Multiple UNITS specifications found")
+                    try:
+                        units = line.split(':', 1)[1].strip()
+                        if units not in ['nM', 'pM', 'uM', 'mM', 'M']:
+                            raise ValueError(f"Line {line_number}: Invalid units '{units}'. Must be one of: nM, pM, uM, mM, M")
+                    except IndexError:
+                        raise ValueError(f"Line {line_number}: Invalid UNITS format. Expected 'UNITS: <unit>'")
+                    continue
+                
+                # If we encounter a non-UNITS, non-comment line, break to start monomer parsing
+                break
+        
+        # Second pass: parse monomers
         monomers = []
         binding_site_index = {}
-        has_concentration = None
         line_number = 0
         monomer_names = set()  # Track monomer names for uniqueness check
         
@@ -39,19 +67,28 @@ class TBNParser:
                 if not line:
                     continue
                 
+                # Skip UNITS lines during monomer parsing
+                if line.startswith('UNITS:'):
+                    continue
+                
                 # Parse the line
                 monomer_data = TBNParser._parse_monomer_line(line, line_number)
                 if monomer_data:
                     name, binding_sites, concentration = monomer_data
                     
-                    # Check consistency of concentration specification
-                    if has_concentration is None:
-                        has_concentration = (concentration is not None)
-                    elif has_concentration != (concentration is not None):
-                        raise ValueError(
-                            f"Line {line_number}: Inconsistent concentration specification. "
-                            "Either all monomers must have concentrations or none."
-                        )
+                    # Check consistency of UNITS and concentration specifications
+                    if units is not None:  # UNITS specified - all monomers must have concentrations
+                        if concentration is None:
+                            raise ValueError(
+                                f"Line {line_number}: UNITS specified but monomer lacks concentration. "
+                                "When UNITS is present, all monomers must have concentrations."
+                            )
+                    else:  # No UNITS - no monomers can have concentrations
+                        if concentration is not None:
+                            raise ValueError(
+                                f"Line {line_number}: Monomer has concentration but no UNITS specified. "
+                                "When concentrations are used, UNITS must be specified."
+                            )
                     
                     # Check for conflicts between monomer names and binding sites
                     if name:
@@ -85,7 +122,7 @@ class TBNParser:
         if not monomers:
             raise ValueError("No valid monomers found in file")
         
-        return monomers, binding_site_index
+        return monomers, binding_site_index, units
     
     @staticmethod
     def _parse_monomer_line(line: str, line_number: int) -> Optional[Tuple[Optional[str], List[BindingSite], Optional[float]]]:

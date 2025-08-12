@@ -1,0 +1,19 @@
+# TBN Polymer Matrix
+# Number of polymers: 13
+# Number of monomers: 8
+# Concentration units: nanoMolar (nM)
+# Columns: monomer_counts[1..8] free_energy concentration
+#
+0 0 0 0 0 0 1 1 -2.0 9.99e+01
+0 0 0 1 1 1 0 0 -4.0 9.99e+01
+0 1 1 0 0 0 0 0 -4.0 9.99e+01
+1 0 0 0 0 0 0 0 -0.0 9.99e+01
+0 0 0 0 0 0 0 1 -0.0 1.22e-01
+0 0 0 0 0 1 1 0 -2.0 1.22e-01
+1 1 1 1 1 0 0 0 -8.0 1.22e-01
+0 0 0 0 0 1 0 0 -0.0 1.48e-04
+0 1 1 1 1 1 1 0 -10.0 1.48e-04
+1 0 0 1 1 0 0 1 -4.0 1.48e-04
+0 0 1 1 0 0 0 0 -4.0 2.35e-11
+0 0 0 0 1 0 0 0 -0.0 1.74e-11
+0 0 1 0 0 0 0 0 -0.0 1.10e-38

@@ -23,7 +23,8 @@ class TestFilterCLI:
     def sample_files(self, temp_dir):
         """Create sample .tbn and .tbnpolymat files for testing."""
         # Create .tbn file
-        tbn_content = """B: b1 b2, 100
+        tbn_content = """UNITS: nM
+B: b1 b2, 100
 a1* a2* b1* b2*, 100
 a1 a2 b1 b2 c1, 100
 a2* b1* b2* c1*, 100

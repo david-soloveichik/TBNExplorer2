@@ -14,7 +14,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -33,7 +33,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -50,7 +50,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -60,26 +60,27 @@ class TestTBNParser:
     
     def test_parse_monomer_with_concentration(self):
         """Test parsing a monomer with concentration."""
-        content = "a b c, 100.5"
+        content = "UNITS: nM\na b c, 100.5"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
         assert len(monomers) == 1
         assert monomers[0].concentration == 100.5
+        assert units == "nM"
     
     def test_parse_named_monomer_with_concentration(self):
         """Test parsing a named monomer with concentration."""
-        content = "mol1: a b c, 50.7"
+        content = "UNITS: nM\nmol1: a b c, 50.7"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -98,7 +99,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -121,7 +122,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -145,7 +146,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -161,7 +162,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            with pytest.raises(ValueError, match="Inconsistent concentration specification"):
+            with pytest.raises(ValueError, match="Monomer has concentration but no UNITS specified"):
                 TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
@@ -201,7 +202,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            monomers, binding_site_index = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -285,7 +286,7 @@ class TestTBNParser:
             f.flush()
             
             # Should not raise error since 'C' (monomer) != 'c' (binding site)
-            monomers, binding_sites = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
         
@@ -296,3 +297,89 @@ class TestTBNParser:
         assert "a" in binding_sites
         assert "b" in binding_sites
         assert "d" in binding_sites
+    
+    def test_units_parsing(self):
+        """Test that UNITS keyword is parsed correctly."""
+        content = "UNITS: uM\na b c, 100"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert units == "uM"
+        assert len(monomers) == 1
+        assert monomers[0].concentration == 100
+    
+    def test_units_with_comments(self):
+        """Test that UNITS works with comments before it."""
+        content = """# This is a comment
+# Another comment
+UNITS: mM
+# Comment after units
+a b c, 50"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert units == "mM"
+        assert len(monomers) == 1
+    
+    def test_no_units_no_concentrations(self):
+        """Test file without UNITS and without concentrations."""
+        content = "a b c\nd e f"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert units is None
+        assert len(monomers) == 2
+        assert all(m.concentration is None for m in monomers)
+    
+    def test_invalid_units_error(self):
+        """Test that invalid units raise an error."""
+        content = "UNITS: invalid\na b c, 100"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Invalid units 'invalid'"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_units_without_concentrations_error(self):
+        """Test that UNITS specified but no concentrations raises error."""
+        content = "UNITS: nM\na b c"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="UNITS specified but monomer lacks concentration"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_multiple_units_error(self):
+        """Test that multiple UNITS specifications raise an error."""
+        content = """UNITS: nM
+UNITS: uM
+a b c, 100"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Multiple UNITS specifications found"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)

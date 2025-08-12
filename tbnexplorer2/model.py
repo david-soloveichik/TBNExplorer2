@@ -70,14 +70,14 @@ class Monomer:
 class TBN:
     """Represents a complete TBN (Thermodynamics of Binding Networks) model."""
     
-    def __init__(self, monomers: List[Monomer], binding_site_index: Dict[str, int], concentration_units: str = 'nM'):
+    def __init__(self, monomers: List[Monomer], binding_site_index: Dict[str, int], concentration_units: Optional[str] = None):
         """
         Initialize a TBN model.
         
         Args:
             monomers: List of Monomer objects
             binding_site_index: Dictionary mapping binding site names to indices
-            concentration_units: Units for input/output concentrations (default: nM)
+            concentration_units: Units for input/output concentrations or None if no concentrations
         """
         self.monomers = monomers
         self.binding_site_index = binding_site_index
@@ -108,7 +108,7 @@ class TBN:
             numpy array of concentrations in Molar or None
         """
         if self._concentrations_molar is None:
-            if all(m.concentration is not None for m in self.monomers):
+            if all(m.concentration is not None for m in self.monomers) and self.concentration_units is not None:
                 # Convert from input units to Molar for internal processing
                 original_concentrations = np.array([m.concentration for m in self.monomers])
                 self._concentrations_molar = to_molar(original_concentrations, self.concentration_units)

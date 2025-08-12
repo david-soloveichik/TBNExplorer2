@@ -72,7 +72,7 @@ class PolymerFilter:
         self.polymat_file = self._infer_polymat_file()
         
         # Parse TBN file to get monomer information
-        self.monomers, self.binding_site_index = TBNParser.parse_file(str(self.tbn_file))
+        self.monomers, self.binding_site_index, self.units = TBNParser.parse_file(str(self.tbn_file))
         
         # Load polymer data from .tbnpolymat file
         self.polymer_data = self._load_polymat_file()

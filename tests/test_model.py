@@ -116,7 +116,7 @@ class TestTBN:
         
         binding_site_index = {"a": 0, "b": 1}
         
-        return TBN(monomers, binding_site_index)
+        return TBN(monomers, binding_site_index, concentration_units='nM')
     
     def test_tbn_creation(self):
         """Test creating a TBN."""

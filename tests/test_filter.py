@@ -77,7 +77,8 @@ class TestPolymerFilter:
     @pytest.fixture
     def sample_tbn_file(self, temp_dir):
         """Create a sample .tbn file for testing."""
-        tbn_content = """B: b1 b2, 100
+        tbn_content = """UNITS: nM
+B: b1 b2, 100
 a1* a2* b1* b2*, 100
 a1 a2 b1 b2 c1, 100
 a2* b1* b2* c1*, 100
@@ -131,7 +132,7 @@ C: c1 c2, 100"""
     def test_missing_polymat_file(self, temp_dir):
         """Test error handling when .tbnpolymat file is missing."""
         tbn_file = temp_dir / "missing.tbn"
-        tbn_file.write_text("B: b1 b2, 100")
+        tbn_file.write_text("UNITS: nM\nB: b1 b2, 100")
         
         with pytest.raises(FileNotFoundError, match="Cannot find polymer matrix file"):
             PolymerFilter(str(tbn_file))
@@ -344,7 +345,7 @@ C: c1 c2, 100"""
         """Test handling .tbnpolymat file without concentrations."""
         # Create TBN file
         tbn_file = temp_dir / "no_conc.tbn"
-        tbn_file.write_text("a b, 0\na* b*, 0")
+        tbn_file.write_text("UNITS: nM\na b, 0\na* b*, 0")
         
         # Create polymat file without concentrations
         polymat_content = """# TBN Polymer Matrix
@@ -373,7 +374,7 @@ C: c1 c2, 100"""
         """Test handling .tbnpolymat file without free energies."""
         # Create TBN file
         tbn_file = temp_dir / "no_fe.tbn"
-        tbn_file.write_text("a b, 0\na* b*, 0")
+        tbn_file.write_text("UNITS: nM\na b, 0\na* b*, 0")
         
         # Create polymat file without free energies
         polymat_content = """# TBN Polymer Matrix

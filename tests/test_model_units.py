@@ -27,10 +27,10 @@ class TestTBNModelUnits(unittest.TestCase):
         self.monomers = [self.monomer1, self.monomer2]
         self.binding_site_index = {"a": 0, "b": 1}
     
-    def test_default_concentration_units(self):
-        """Test that default concentration units are nM."""
+    def test_no_concentration_units(self):
+        """Test that concentration units default to None when not specified."""
         tbn = TBN(self.monomers, self.binding_site_index)
-        self.assertEqual(tbn.concentration_units, 'nM')
+        self.assertIsNone(tbn.concentration_units)
     
     def test_custom_concentration_units(self):
         """Test setting custom concentration units."""

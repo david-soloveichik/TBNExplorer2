@@ -21,17 +21,26 @@ We need to be efficient in representing the matrix A as we will be doing some li
 The TBN is input from a .tbn file that is given as a command line argument. Here is an example of the input format. Empty lines, or lines just containing comments are ok.
 ```
 # this line is a comment
+UNITS: nM
 monomer1: a a* b2 b1, 100
-b2* b2* b1 b1  # this is a comment
+b2* b2* b1 b1, 75.5  # this is a comment
 a b2* b1, 50.7
 ```
 Note that "#" followed by anything is a comment and should be ignored.
+
+## Units specification
+The presence or absence of a `UNITS` keyword determines the type of .tbn file:
+- **With UNITS**: All monomers MUST have concentrations specified. The UNITS line specifies the concentration units and has the format `UNITS: <unit>` where `<unit>` can be: nM (nanoMolar), pM (picoMolar), uM (microMolar), mM (milliMolar), or M (Molar).
+- **Without UNITS**: NO monomers can have concentrations specified.
+
+The UNITS line can appear anywhere before the first monomer definition (comments and empty lines are allowed before it).
+
 Monomers can have names which is indicated by a name following by ":" prior to the monomer specification.
-Monomers can have concentrations indicated by a comma followed by the concentration after the monomer specification. There are two types of .tbn files: where each monomer has a concentration or none of the monomers have a concentration. 
-Important: An error should be returned if some monomers have concentration and others not.
+When UNITS is specified, monomers must have concentrations indicated by a comma followed by the concentration after the monomer specification.
+Important: An error should be returned if UNITS is present but some monomers lack concentrations, or if UNITS is absent but some monomers have concentrations.
 
 To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
-Monomer names should not have spaces or any of the prohibited symbols ",*|:"
+Monomer names should not have spaces or any of the prohibited symbols ",*|:", and cannot be reserved keywords (currently: UNITS).
 
 
 # Polymers 
@@ -108,8 +117,7 @@ Note that the `--no-free-energies` option also disables the concentrations compu
 
 
 # Units
-Our `tbnexplorer2` tool should take an additional command line argument `--concentration-units` which should default to "nM" (nanoMolar) if not given. Other options are "pM (picoMolar), "uM" (microMolar), "mM" (milliMolar), and "M" (Molar).
-The input .tbn file specifies the monomer concentrations in the units given by the `--concentration-units` parameter. This should be converted to Molar for COFFEE and then _back_ to the desired units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
+The concentration units are specified directly in the .tbn file using the `UNITS` keyword (see above). The monomer concentrations in the .tbn file are in the units specified by the UNITS line. These should be converted to Molar for COFFEE and then _back_ to the original units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
 
 
 # Filtering output .tbnpolymat file

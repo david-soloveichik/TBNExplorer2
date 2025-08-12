@@ -1,11 +1,12 @@
 # Simple TBN example file
-# This demonstrates the TBN file format
+# This demonstrates the TBN file format with concentrations
+UNITS: nM
 
 # Named monomer with concentration
 monomer1: a a* b2 b1, 100
 
-# Unnamed monomer without concentration  
-b2* b2* b1 b1  # this is a comment
+# Unnamed monomer with concentration  
+b2* b2* b1 b1, 75.5  # this is a comment
 
 # Another monomer with concentration
 a b2* b1, 50.7

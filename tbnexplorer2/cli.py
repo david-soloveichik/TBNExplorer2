@@ -38,6 +38,13 @@ Examples:
   
   # Verbose output
   tbnexplorer2 example.tbn --verbose
+
+TBN File Format:
+  Concentration units are specified directly in the .tbn file using:
+    UNITS: nM    (or pM, uM, mM, M)
+  
+  If UNITS is specified, ALL monomers must have concentrations.
+  If UNITS is not specified, NO monomers can have concentrations.
         """
     )
     
@@ -87,12 +94,6 @@ Examples:
         help=f'Path to COFFEE executable (default: {COFFEE_CLI_PATH})'
     )
     
-    parser.add_argument(
-        '--concentration-units',
-        default='nM',
-        choices=VALID_UNITS,
-        help='Concentration units for input and output (default: nM). Supported: pM, nM, uM, mM, M'
-    )
     
     parser.add_argument(
         '--user-friendly-polymer-basis',
@@ -124,14 +125,14 @@ Examples:
         if args.verbose:
             print(f"Parsing TBN file: {args.input_file}")
         
-        monomers, binding_site_index = TBNParser.parse_file(args.input_file)
+        monomers, binding_site_index, concentration_units = TBNParser.parse_file(args.input_file)
         
         if args.verbose:
             print(f"Found {len(monomers)} monomers")
             print(f"Found {len(binding_site_index)} unique binding sites")
         
         # Create TBN model
-        tbn = TBN(monomers, binding_site_index, concentration_units=args.concentration_units)
+        tbn = TBN(monomers, binding_site_index, concentration_units=concentration_units)
         
         # Check star-limiting restriction
         if args.verbose:
@@ -201,7 +202,7 @@ Examples:
         
         # Show concentration units information only if concentrations are provided
         if tbn.concentrations is not None:
-            unit_display = get_unit_display_name(args.concentration_units)
+            unit_display = get_unit_display_name(concentration_units)
             print(f"Concentration units: {unit_display}")
         
         print(f"Results saved to:")

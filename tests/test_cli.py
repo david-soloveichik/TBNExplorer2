@@ -52,7 +52,7 @@ monomer2: a* b*
              patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
             
             # Set up mocks
-            mock_parser.parse_file.return_value = ([], {})
+            mock_parser.parse_file.return_value = ([], {}, None)
             mock_tbn_instance = MagicMock()
             mock_tbn_instance.check_star_limiting.return_value = (True, None)
             mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
@@ -95,7 +95,7 @@ monomer2: a* b*
              patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
             
             # Set up mocks
-            mock_parser.parse_file.return_value = ([], {})
+            mock_parser.parse_file.return_value = ([], {}, None)
             mock_tbn_instance = MagicMock()
             mock_tbn_instance.check_star_limiting.return_value = (True, None)
             mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
@@ -138,7 +138,7 @@ monomer2: a* b*
              patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
             
             # Set up mocks
-            mock_parser.parse_file.return_value = ([], {})
+            mock_parser.parse_file.return_value = ([], {}, None)
             mock_tbn_instance = MagicMock()
             mock_tbn_instance.check_star_limiting.return_value = (True, None)
             mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
@@ -196,7 +196,7 @@ monomer2: a* b*
              patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
             
             # Set up mocks
-            mock_parser.parse_file.return_value = ([], {})
+            mock_parser.parse_file.return_value = ([], {}, None)
             mock_tbn_instance = MagicMock()
             mock_tbn_instance.check_star_limiting.return_value = (True, None)
             mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))
@@ -233,7 +233,7 @@ monomer2: a* b*
              patch('tbnexplorer2.cli.PolymerBasisComputer') as mock_computer:
             
             # Set up mocks
-            mock_parser.parse_file.return_value = ([], {})
+            mock_parser.parse_file.return_value = ([], {}, None)
             mock_tbn_instance = MagicMock()
             mock_tbn_instance.check_star_limiting.return_value = (True, None)
             mock_tbn_instance.matrix_A = MagicMock(shape=(0, 0))

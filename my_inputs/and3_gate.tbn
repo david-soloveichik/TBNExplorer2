@@ -1,0 +1,25 @@
+#This system represents an and gate with 3 inputs. (a b) is input 1, (c d) is input 2, and (g h) is input 3.
+#In logic, this system represents "Stable configuration found == true iff input1 && input2 && input3"
+#The constraints for this system require that the output (i j) is free.
+#Reaching a stable configuration is only possible if all of input 1, input 2, and input 3 exist in the system.
+#Try un-commenting them to see.
+#First and gate below (e f) = (a b) AND (c d)
+a b c d e
+a* b* c* d*
+b* c* d* e*
+d e f
+input1: a b
+b c
+input2: c d
+e f
+e* f*
+#Second cascaded AND gate (i j) = (e f) AND (g h) = (a b) AND (c d) AND (g h)
+e f g h i
+e* f* g* h*
+f* g* h* i*
+h i j
+#The e f monomer already exists in the system above, so we do not need to reinstantiate it into the second part of the and gate
+f g
+input3: g h
+output: i j
+i* j*
