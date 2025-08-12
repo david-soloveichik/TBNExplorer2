@@ -164,15 +164,16 @@ TBN File Format:
         polymers = computer.load_cached_polymer_basis(polymat_file)
         
         if polymers is not None:
-            if args.verbose:
-                print("Using cached polymer basis (matrix hashes match)")
+            used_cache = True
             print("Using cached polymer basis (matrix hashes match)")
-        else:
-            # Compute polymer basis
             if args.verbose:
-                print("Computing polymer basis...")
-                print(f"Matrix A shape: {tbn.matrix_A.shape}")
+                print(f"Loaded {len(polymers)} polymers from cache")
+        else:
+            used_cache = False
+            # Compute polymer basis
             print("Computing polymer basis...")
+            if args.verbose:
+                print(f"Matrix A shape: {tbn.matrix_A.shape}")
             
             polymers = computer.compute_polymer_basis()
             
@@ -206,8 +207,12 @@ TBN File Format:
         )
         
         # Print summary
-        print(f"\nPolymer basis computation complete")
-        print(f"Number of polymers in basis: {len(polymers)}")
+        if used_cache:
+            print(f"\nSummary:")
+            print(f"Polymer basis: {len(polymers)} polymers (cached)")
+        else:
+            print(f"\nPolymer basis computation complete")
+            print(f"Number of polymers in basis: {len(polymers)}")
         
         # Show concentration units information only if concentrations are provided
         if tbn.concentrations is not None:
