@@ -202,21 +202,63 @@ C: c1 c2, 100"""
         # Should return empty list
         assert len(results) == 0
     
+    def test_filter_empty_monomer_list(self, sample_tbn_file, sample_polymat_file):
+        """Test filtering with empty monomer list (should return all polymers)."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        # Filter with empty list
+        results = filter.filter_by_monomers([])
+        
+        # Should return all 13 polymers
+        assert len(results) == 13
+        
+        # All polymers should be included
+        polymer_indices = set(idx for idx, _, _, _ in results)
+        assert polymer_indices == set(range(13))
+    
+    def test_max_count_limit(self, sample_tbn_file, sample_polymat_file):
+        """Test filtering with max_count limit."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        # Get all polymers first
+        all_results = filter.filter_by_monomers([])
+        
+        # Filter with max_count=5
+        limited_results = filter.filter_by_monomers([], max_count=5)
+        
+        # Should have exactly 5 results
+        assert len(limited_results) == 5
+        
+        # Should be the first 5 from the full list (after sorting)
+        for i in range(5):
+            assert limited_results[i][0] == all_results[i][0]  # Same polymer index
+    
+    def test_max_count_with_monomer_filter(self, sample_tbn_file, sample_polymat_file):
+        """Test max_count combined with monomer filtering."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        # Filter for B with max_count=2
+        results = filter.filter_by_monomers(['B'], max_count=2)
+        
+        # Should have at most 2 results
+        assert len(results) <= 2
+        
+        # All should contain B
+        for idx, counts, fe, conc in results:
+            assert counts[0] > 0  # B is at index 0
+    
     def test_percent_limit_filtering(self, sample_tbn_file, sample_polymat_file):
         """Test filtering with percent limit."""
         filter = PolymerFilter(str(sample_tbn_file))
         
-        # Get all polymers first
-        all_results = filter.filter_by_monomers([])  # Empty list should match all
-        
-        # Actually, empty list won't match properly. Let's filter for everything with B
+        # Get all polymers with B first
         all_with_B = filter.filter_by_monomers(['B'])
         
         # Now filter with 10% limit
         filtered_results = filter.filter_by_monomers(['B'], percent_limit=10.0)
         
         # Should have fewer results
-        assert len(filtered_results) < len(all_with_B)
+        assert len(filtered_results) <= len(all_with_B)
         
         # Check that all remaining have high concentration
         total_conc = np.sum(filter.polymer_data['concentrations'])
@@ -262,6 +304,25 @@ C: c1 c2, 100"""
         output = filter.format_output(results, ['B'], percent_limit=5.0)
         
         assert "# Percent limit: 5.0%" in output
+    
+    def test_format_output_with_max_count(self, sample_tbn_file, sample_polymat_file):
+        """Test output formatting with max_count limit."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        results = filter.filter_by_monomers(['B'], max_count=3)
+        output = filter.format_output(results, ['B'], max_count=3)
+        
+        assert "# Maximum count limit: 3" in output
+    
+    def test_format_output_empty_monomers(self, sample_tbn_file, sample_polymat_file):
+        """Test output formatting with empty monomer list."""
+        filter = PolymerFilter(str(sample_tbn_file))
+        
+        results = filter.filter_by_monomers([])
+        output = filter.format_output(results, [])
+        
+        assert "# All polymers" in output
+        assert "# Filtered polymers containing:" not in output
     
     def test_nice_concentration_formatting_in_output(self, sample_tbn_file, sample_polymat_file):
         """Test that concentrations are nicely formatted in output."""

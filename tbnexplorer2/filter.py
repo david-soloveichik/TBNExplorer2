@@ -165,37 +165,44 @@ class PolymerFilter:
         
         return data
     
-    def filter_by_monomers(self, monomer_names: List[str], percent_limit: Optional[float] = None) -> List[Tuple[int, np.ndarray, Optional[float], Optional[float]]]:
+    def filter_by_monomers(self, monomer_names: List[str], percent_limit: Optional[float] = None, max_count: Optional[int] = None) -> List[Tuple[int, np.ndarray, Optional[float], Optional[float]]]:
         """
         Filter polymers containing all specified monomers.
         
         Args:
-            monomer_names: List of monomer names to filter by (can have duplicates for multiplicity)
+            monomer_names: List of monomer names to filter by (can have duplicates for multiplicity).
+                          If empty, returns all polymers (subject to other limits).
             percent_limit: Optional percentage limit (0-100) for filtering by concentration
+            max_count: Maximum number of polymers to return
             
         Returns:
             List of tuples (polymer_index, monomer_counts, free_energy, concentration)
             sorted by decreasing concentration (if available) or by polymer index
         """
-        # Count required multiplicity for each monomer name
-        required_counts = {}
-        for name in monomer_names:
-            required_counts[name] = required_counts.get(name, 0) + 1
-        
-        # Create mapping from monomer name/binding sites to indices
-        monomer_name_to_indices = {}
-        for i, monomer in enumerate(self.monomers):
-            # Use monomer name if available, otherwise use binding sites string
-            identifier = monomer.name if monomer.name else monomer.get_binding_sites_str()
-            if identifier not in monomer_name_to_indices:
-                monomer_name_to_indices[identifier] = []
-            monomer_name_to_indices[identifier].append(i)
-        
-        # Check if all required monomer names exist
-        for name in required_counts:
-            if name not in monomer_name_to_indices:
-                # Return empty list if monomer name doesn't exist
-                return []
+        # Handle empty monomer names list - return all polymers
+        if not monomer_names:
+            required_counts = {}
+            monomer_name_to_indices = {}
+        else:
+            # Count required multiplicity for each monomer name
+            required_counts = {}
+            for name in monomer_names:
+                required_counts[name] = required_counts.get(name, 0) + 1
+            
+            # Create mapping from monomer name/binding sites to indices
+            monomer_name_to_indices = {}
+            for i, monomer in enumerate(self.monomers):
+                # Use monomer name if available, otherwise use binding sites string
+                identifier = monomer.name if monomer.name else monomer.get_binding_sites_str()
+                if identifier not in monomer_name_to_indices:
+                    monomer_name_to_indices[identifier] = []
+                monomer_name_to_indices[identifier].append(i)
+            
+            # Check if all required monomer names exist
+            for name in required_counts:
+                if name not in monomer_name_to_indices:
+                    # Return empty list if monomer name doesn't exist
+                    return []
         
         # Calculate total concentration if available
         total_concentration = None
@@ -207,12 +214,13 @@ class PolymerFilter:
         for i, polymer_counts in enumerate(self.polymer_data['polymers']):
             # Check if polymer contains all required monomers with correct multiplicity
             matches = True
-            for monomer_name, required_count in required_counts.items():
-                # Sum counts for all monomers with this name
-                actual_count = sum(polymer_counts[idx] for idx in monomer_name_to_indices[monomer_name])
-                if actual_count < required_count:
-                    matches = False
-                    break
+            if required_counts:  # Only check if we have filtering criteria
+                for monomer_name, required_count in required_counts.items():
+                    # Sum counts for all monomers with this name
+                    actual_count = sum(polymer_counts[idx] for idx in monomer_name_to_indices[monomer_name])
+                    if actual_count < required_count:
+                        matches = False
+                        break
             
             if matches:
                 free_energy = None
@@ -235,10 +243,14 @@ class PolymerFilter:
         if self.polymer_data['has_concentrations']:
             matching_polymers.sort(key=lambda x: x[3] if x[3] is not None else 0, reverse=True)
         
+        # Apply max_count limit
+        if max_count is not None and max_count > 0:
+            matching_polymers = matching_polymers[:max_count]
+        
         return matching_polymers
     
     def format_output(self, filtered_polymers: List[Tuple[int, np.ndarray, Optional[float], Optional[float]]], 
-                     monomer_names: List[str], percent_limit: Optional[float] = None) -> str:
+                     monomer_names: List[str], percent_limit: Optional[float] = None, max_count: Optional[int] = None) -> str:
         """
         Format filtered polymers for user-friendly output.
         
@@ -246,6 +258,7 @@ class PolymerFilter:
             filtered_polymers: List of filtered polymer tuples
             monomer_names: Original list of monomer names used for filtering
             percent_limit: Percent limit used for filtering (if any)
+            max_count: Maximum count limit used for filtering (if any)
             
         Returns:
             Formatted string output
@@ -253,9 +266,14 @@ class PolymerFilter:
         output_lines = []
         
         # Header
-        output_lines.append(f"# Filtered polymers containing: {' '.join(monomer_names)}")
+        if monomer_names:
+            output_lines.append(f"# Filtered polymers containing: {' '.join(monomer_names)}")
+        else:
+            output_lines.append("# All polymers")
         if percent_limit is not None:
             output_lines.append(f"# Percent limit: {percent_limit}%")
+        if max_count is not None:
+            output_lines.append(f"# Maximum count limit: {max_count}")
         output_lines.append(f"# Number of matching polymers: {len(filtered_polymers)}")
         
         # Calculate total concentration stats if available

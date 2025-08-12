@@ -40,12 +40,20 @@ Examples:
     
     parser.add_argument(
         'monomer_names',
-        nargs='+',
-        help='Space-separated list of monomer names to filter by. For named monomers, use their name (e.g., B, C). For unnamed monomers, use their binding sites (e.g., "a1* a2* b1* b2*"). Duplicates increase required multiplicity.'
+        nargs='*',
+        help='Space-separated list of monomer names to filter by. For named monomers, use their name (e.g., B, C). For unnamed monomers, use their binding sites (e.g., "a1* a2* b1* b2*"). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).'
     )
     
     parser.add_argument(
-        '--percent-limit',
+        '--num', '-n',
+        type=int,
+        default=100,
+        metavar='N',
+        help='Maximum number of polymers to output (default: 100)'
+    )
+    
+    parser.add_argument(
+        '--percent-limit', '-p',
         type=float,
         metavar='P',
         help='Only show polymers with concentration > P%% of total concentration'
@@ -64,6 +72,11 @@ Examples:
             print(f"Error: --percent-limit must be between 0 and 100", file=sys.stderr)
             sys.exit(1)
     
+    # Validate num parameter
+    if args.num < 1:
+        print(f"Error: --num must be at least 1", file=sys.stderr)
+        sys.exit(1)
+    
     try:
         # Create filter and load data
         polymer_filter = PolymerFilter(args.tbn_file)
@@ -71,14 +84,16 @@ Examples:
         # Filter polymers
         filtered_polymers = polymer_filter.filter_by_monomers(
             args.monomer_names,
-            percent_limit=args.percent_limit
+            percent_limit=args.percent_limit,
+            max_count=args.num
         )
         
         # Format and output results
         output = polymer_filter.format_output(
             filtered_polymers,
             args.monomer_names,
-            percent_limit=args.percent_limit
+            percent_limit=args.percent_limit,
+            max_count=args.num
         )
         
         print(output)

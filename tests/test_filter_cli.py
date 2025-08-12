@@ -118,6 +118,77 @@ C: c1 c2, 100"""
         assert "# Percent limit: 10.0%" in result.stdout
         assert "# Filtered polymers containing: B" in result.stdout
     
+    def test_filter_with_percent_limit_short_form(self, sample_files):
+        """Test filtering with percent limit using short form -p."""
+        tbn_file, _ = sample_files
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), 'B', '-p', '10'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode == 0
+        assert "# Percent limit: 10.0%" in result.stdout
+        assert "# Filtered polymers containing: B" in result.stdout
+    
+    def test_filter_with_num_limit(self, sample_files):
+        """Test filtering with --num limit."""
+        tbn_file, _ = sample_files
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), 'B', '--num', '3'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode == 0
+        assert "# Maximum count limit: 3" in result.stdout
+        assert "# Filtered polymers containing: B" in result.stdout
+    
+    def test_filter_with_num_limit_short_form(self, sample_files):
+        """Test filtering with -n limit."""
+        tbn_file, _ = sample_files
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), 'B', '-n', '2'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode == 0
+        assert "# Maximum count limit: 2" in result.stdout
+        assert "# Filtered polymers containing: B" in result.stdout
+    
+    def test_filter_no_monomers(self, sample_files):
+        """Test filtering with no monomers specified (should return all polymers)."""
+        tbn_file, _ = sample_files
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file)],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode == 0
+        assert "# All polymers" in result.stdout
+        assert "# Number of matching polymers: 13" in result.stdout  # Should match total from sample data
+    
+    def test_filter_no_monomers_with_num_limit(self, sample_files):
+        """Test filtering with no monomers but with num limit."""
+        tbn_file, _ = sample_files
+        
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), '--num', '5'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode == 0
+        assert "# All polymers" in result.stdout
+        assert "# Maximum count limit: 5" in result.stdout
+        assert "# Number of matching polymers: 5" in result.stdout
+    
     def test_invalid_percent_limit(self, sample_files):
         """Test error handling for invalid percent limit."""
         tbn_file, _ = sample_files
@@ -141,6 +212,20 @@ C: c1 c2, 100"""
         
         assert result.returncode != 0
         assert "Error: --percent-limit must be between 0 and 100" in result.stderr
+    
+    def test_invalid_num_limit(self, sample_files):
+        """Test error handling for invalid num limit."""
+        tbn_file, _ = sample_files
+        
+        # Test negative num
+        result = subprocess.run(
+            ['python', '-m', 'tbnexplorer2.filter_cli', str(tbn_file), 'B', '--num', '0'],
+            capture_output=True,
+            text=True
+        )
+        
+        assert result.returncode != 0
+        assert "Error: --num must be at least 1" in result.stderr
     
     def test_missing_tbn_file(self):
         """Test error handling for missing .tbn file."""
@@ -192,6 +277,7 @@ C: c1 c2, 100"""
         assert result.returncode == 0
         assert "Filter polymers from .tbnpolymat files by monomer names" in result.stdout
         assert "--percent-limit" in result.stdout
+        assert "--num" in result.stdout
         assert "Examples:" in result.stdout
     
     def test_real_example_file(self):

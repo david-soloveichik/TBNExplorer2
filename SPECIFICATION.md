@@ -120,6 +120,8 @@ The next thing on the command line is a space-separated list of _monomer names_:
 
 The tool should output to the standard output only the polymers containing _all_ the monomers `m1 m2 ...`. If a monomer name repeats multiple times, we take this as the lower bound on the multiplicity of that monomer in the polymers to return.
 
+If no monomer names are specified as input, then we do not do any filtering by monomer inclusion and return all polymers. (The output limits described below would still apply.)
+
 ## Output format
 The output format should be user-friendly like in the `[example]-polymer-basis.txt` file, except that polymer concentrations are listed. 
 The order of the polymers should be in order of decreasing concentration.
@@ -129,5 +131,8 @@ Also, let's format the concentrations "nicely": i.e., instead of "9.99e+01 nM" w
 
 ## Output limit
 Sometimes even with the filtering criteria, there are still too many polymers. 
-We add an optional command line argument `--percent-limit p` where p is a percent number (real-value). 
+
+First, we can limit the maximum number of polymers output with the optional `--num` parameter (short `-n`). This defaults to 100 if not explicitly specified.
+
+Second, we add an optional command line argument `--percent-limit p` (short `-p`) where p is a percent number (real-value). 
 The output should be restricted to those polymers whose concentration is above (p/100) fraction of the _total concentration_ of all polymers in the .tbnpolymat file. 
