@@ -96,8 +96,12 @@ class TBN:
             numpy array of shape (n_binding_sites, n_monomers)
         """
         if self._matrix_A is None:
-            vectors = [m.to_vector(self.binding_site_index) for m in self.monomers]
-            self._matrix_A = np.column_stack(vectors)
+            if not self.monomers:
+                # Handle empty monomers case
+                self._matrix_A = np.zeros((len(self.binding_site_index), 0), dtype=int)
+            else:
+                vectors = [m.to_vector(self.binding_site_index) for m in self.monomers]
+                self._matrix_A = np.column_stack(vectors)
         return self._matrix_A
     
     @property

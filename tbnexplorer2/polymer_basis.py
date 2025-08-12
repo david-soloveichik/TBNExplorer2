@@ -225,7 +225,7 @@ class PolymerBasisComputer:
             # Convert to Polymer objects
             polymers = []
             for counts in polymers_data:
-                polymer = Polymer(counts, self.tbn)
+                polymer = Polymer(counts, self.tbn.monomers, self.tbn)
                 polymers.append(polymer)
             
             return polymers
