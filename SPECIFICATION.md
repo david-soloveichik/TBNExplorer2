@@ -125,7 +125,7 @@ Note that the `--no-free-energies` option also disables the concentrations compu
 The concentration units are specified directly in the .tbn file using the `UNITS` keyword (see above). The monomer concentrations in the .tbn file are in the units specified by the UNITS line. These should be converted to Molar for COFFEE and then _back_ to the original units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
 
 
-# Filtering output .tbnpolymat file with `tbnexplorer2-filter`
+# Filtering output .tbnpolymat file and user-friendly presentation with `tbnexplorer2-filter`
 The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file.
 
 We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 

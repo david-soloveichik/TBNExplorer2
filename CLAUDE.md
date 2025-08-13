@@ -1,6 +1,6 @@
-- Always, please let me know if you have any questions prior to proceeding. Also feel free to interrupt your work to ask me questions when they come up.
-- Create unit tests and test the code you write.
-- Don't read or modify files in ./PLANNING/
-- The desired specification is in SPECIFICATION.md. Please read it when you need to get a big picture perspective on the project. 
-- If told to _implement the updated specification_, use `git diff SPECIFICATION.md` to see uncommitted changes and implement only those changes. (Ignore minor formatting changes in SPECIFICATION.md file itself.)
-- When git committing, also include SPECIFICATION.md
+- Claude should always let the user know if it has any questions prior to proceeding. Claude should interrupt work if questions arise mid-way.
+- Claude should create unit tests and test the code written.
+- Claude should not read or modify files in ./PLANNING/
+- The desired specification is in SPECIFICATION.md. If told to _implement the updated specification_, Claude should use `git diff SPECIFICATION.md` to see uncommitted changes and implement only those changes. (Ignoring minor formatting changes in SPECIFICATION.md file itself.)
+- Claude should read the entire SPECIFICATION.md file when it would benefit from a big-picture perspective on the project.
+- When git committing, Claude should include SPECIFICATION.md if it was changed by Claude or the user.
