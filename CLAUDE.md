@@ -1,5 +1,6 @@
 - Always, please let me know if you have any questions prior to proceeding. Also feel free to interrupt your work to ask me questions when they come up.
 - Create unit tests and test the code you write.
 - Don't read or modify files in ./PLANNING/
-- The desired specification is in SPECIFICATION.md. If told to implement the updated specification, use `git diff SPECIFICATION.md` to see uncommitted changes and implement only those changes. (Ignore minor formatting changes in SPECIFICATION.md file itself.)
+- The desired specification is in SPECIFICATION.md. Please read it when you need to get a big picture perspective on the project. 
+- If told to _implement the updated specification_, use `git diff SPECIFICATION.md` to see uncommitted changes and implement only those changes. (Ignore minor formatting changes in SPECIFICATION.md file itself.)
 - When git committing, also include SPECIFICATION.md

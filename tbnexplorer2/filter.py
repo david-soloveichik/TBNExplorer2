@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from .parser import TBNParser
 from .model import TBN, Monomer
+from .polymat_io import PolymatReader, PolymatData
 
 
 def format_concentration_nicely(value: float, units: str) -> str:
@@ -102,65 +103,15 @@ class PolymerFilter:
         
         return polymat_file
     
-    def _load_polymat_file(self) -> Dict:
+    def _load_polymat_file(self) -> PolymatData:
         """
         Load and parse the .tbnpolymat file.
         
         Returns:
-            Dictionary containing polymer data with keys:
-            - 'polymers': List of polymer count arrays
-            - 'free_energies': Optional array of free energies
-            - 'concentrations': Optional array of concentrations
-            - 'has_free_energies': Boolean indicating if free energies are present
-            - 'has_concentrations': Boolean indicating if concentrations are present
+            PolymatData object containing polymer information
         """
-        data = {
-            'polymers': [],
-            'free_energies': None,
-            'concentrations': None,
-            'has_free_energies': False,
-            'has_concentrations': False
-        }
-        
-        free_energies = []
-        concentrations = []
-        
-        with open(self.polymat_file, 'r') as f:
-            # Parse header to determine what columns are present
-            for line in f:
-                if line.startswith('# Columns:'):
-                    columns_str = line.split(':', 1)[1].strip()
-                    data['has_free_energies'] = 'free_energy' in columns_str
-                    data['has_concentrations'] = 'concentration' in columns_str
-                elif not line.startswith('#'):
-                    # Data line
-                    parts = line.strip().split()
-                    if not parts:
-                        continue
-                    
-                    # First n_monomers values are monomer counts
-                    n_monomers = len(self.monomers)
-                    monomer_counts = np.array([int(x) for x in parts[:n_monomers]])
-                    data['polymers'].append(monomer_counts)
-                    
-                    # Check for additional columns
-                    col_index = n_monomers
-                    if data['has_free_energies'] and col_index < len(parts):
-                        free_energies.append(float(parts[col_index]))
-                        col_index += 1
-                    
-                    if data['has_concentrations'] and col_index < len(parts):
-                        # Parse scientific notation properly
-                        conc_str = parts[col_index]
-                        concentrations.append(float(conc_str))
-        
-        # Convert lists to arrays
-        if free_energies:
-            data['free_energies'] = np.array(free_energies)
-        if concentrations:
-            data['concentrations'] = np.array(concentrations)
-        
-        return data
+        reader = PolymatReader(str(self.polymat_file))
+        return reader.read()
     
     def filter_by_monomers(self, monomer_names: List[str], percent_limit: Optional[float] = None, max_count: Optional[int] = None) -> List[Tuple[int, np.ndarray, Optional[float], Optional[float]]]:
         """
@@ -203,12 +154,12 @@ class PolymerFilter:
         
         # Calculate total concentration if available
         total_concentration = None
-        if self.polymer_data['has_concentrations'] and self.polymer_data['concentrations'] is not None:
-            total_concentration = np.sum(self.polymer_data['concentrations'])
+        if self.polymer_data.has_concentrations and self.polymer_data.concentrations is not None:
+            total_concentration = np.sum(self.polymer_data.concentrations)
         
         # Filter polymers
         matching_polymers = []
-        for i, polymer_counts in enumerate(self.polymer_data['polymers']):
+        for i, polymer_counts in enumerate(self.polymer_data.polymers):
             # Check if polymer contains all required monomers with correct multiplicity
             matches = True
             if required_counts:  # Only check if we have filtering criteria
@@ -220,13 +171,7 @@ class PolymerFilter:
                         break
             
             if matches:
-                free_energy = None
-                if self.polymer_data['free_energies'] is not None:
-                    free_energy = self.polymer_data['free_energies'][i]
-                
-                concentration = None
-                if self.polymer_data['concentrations'] is not None:
-                    concentration = self.polymer_data['concentrations'][i]
+                _, free_energy, concentration = self.polymer_data.get_polymer_data(i)
                 
                 # Apply percent limit if specified
                 if percent_limit is not None and concentration is not None and total_concentration is not None:
@@ -237,7 +182,7 @@ class PolymerFilter:
                 matching_polymers.append((i, polymer_counts, free_energy, concentration))
         
         # Sort by concentration (descending) if available
-        if self.polymer_data['has_concentrations']:
+        if self.polymer_data.has_concentrations:
             matching_polymers.sort(key=lambda x: x[3] if x[3] is not None else 0, reverse=True)
         
         # Apply max_count limit
@@ -274,8 +219,8 @@ class PolymerFilter:
         output_lines.append(f"# Number of matching polymers: {len(filtered_polymers)}")
         
         # Calculate total concentration stats if available
-        if self.polymer_data['has_concentrations'] and self.polymer_data['concentrations'] is not None:
-            total_concentration = np.sum(self.polymer_data['concentrations'])
+        if self.polymer_data.has_concentrations and self.polymer_data.concentrations is not None:
+            total_concentration = np.sum(self.polymer_data.concentrations)
             matching_concentration = sum(p[3] for p in filtered_polymers if p[3] is not None)
             percentage = (matching_concentration / total_concentration * 100) if total_concentration > 0 else 0
             output_lines.append(f"# Total concentration fraction: {percentage:.2f}%")
@@ -285,7 +230,7 @@ class PolymerFilter:
         output_lines.append("#")
         
         # Format each polymer
-        for idx, (polymer_idx, monomer_counts, free_energy, concentration) in enumerate(filtered_polymers, 1):
+        for idx, (_, monomer_counts, _, concentration) in enumerate(filtered_polymers, 1):
             output_lines.append(f"# Polymer {idx}")
             
             # Show polymer composition

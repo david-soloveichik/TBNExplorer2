@@ -125,8 +125,8 @@ C: c1 c2, 100"""
         assert filter.tbn_file == sample_tbn_file
         assert filter.polymat_file == sample_polymat_file
         assert len(filter.monomers) == 8
-        assert filter.polymer_data['has_free_energies'] == True
-        assert filter.polymer_data['has_concentrations'] == True
+        assert filter.polymer_data.has_free_energies == True
+        assert filter.polymer_data.has_concentrations == True
         assert filter.units == 'nM'
     
     def test_missing_polymat_file(self, temp_dir):
@@ -141,17 +141,17 @@ C: c1 c2, 100"""
         """Test loading polymer data from .tbnpolymat file."""
         filter = PolymerFilter(str(sample_tbn_file))
         
-        assert len(filter.polymer_data['polymers']) == 13
-        assert filter.polymer_data['free_energies'] is not None
-        assert len(filter.polymer_data['free_energies']) == 13
-        assert filter.polymer_data['concentrations'] is not None
-        assert len(filter.polymer_data['concentrations']) == 13
+        assert len(filter.polymer_data.polymers) == 13
+        assert filter.polymer_data.free_energies is not None
+        assert len(filter.polymer_data.free_energies) == 13
+        assert filter.polymer_data.concentrations is not None
+        assert len(filter.polymer_data.concentrations) == 13
         
         # Check first polymer
-        first_polymer = filter.polymer_data['polymers'][0]
+        first_polymer = filter.polymer_data.polymers[0]
         np.testing.assert_array_equal(first_polymer, [0, 0, 0, 0, 0, 0, 1, 1])
-        assert filter.polymer_data['free_energies'][0] == -2.0
-        assert np.isclose(filter.polymer_data['concentrations'][0], 99.9)
+        assert filter.polymer_data.free_energies[0] == -2.0
+        assert np.isclose(filter.polymer_data.concentrations[0], 99.9)
     
     def test_filter_by_single_monomer(self, sample_tbn_file, sample_polymat_file):
         """Test filtering by a single monomer name."""
@@ -262,7 +262,7 @@ C: c1 c2, 100"""
         assert len(filtered_results) <= len(all_with_B)
         
         # Check that all remaining have high concentration
-        total_conc = np.sum(filter.polymer_data['concentrations'])
+        total_conc = np.sum(filter.polymer_data.concentrations)
         for idx, counts, fe, conc in filtered_results:
             assert (conc / total_conc * 100) >= 10.0
     
@@ -362,8 +362,8 @@ C: c1 c2, 100"""
         
         filter = PolymerFilter(str(tbn_file))
         
-        assert filter.polymer_data['has_concentrations'] == False
-        assert filter.polymer_data['concentrations'] is None
+        assert filter.polymer_data.has_concentrations == False
+        assert filter.polymer_data.concentrations is None
         
         # Should still be able to filter
         results = filter.filter_by_monomers(['a b'])
@@ -391,9 +391,9 @@ C: c1 c2, 100"""
         
         filter = PolymerFilter(str(tbn_file))
         
-        assert filter.polymer_data['has_free_energies'] == False
-        assert filter.polymer_data['free_energies'] is None
-        assert filter.polymer_data['has_concentrations'] == False  # No conc without FE
+        assert filter.polymer_data.has_free_energies == False
+        assert filter.polymer_data.free_energies is None
+        assert filter.polymer_data.has_concentrations == False  # No conc without FE
         
         # Should still be able to filter
         results = filter.filter_by_monomers(['a b'])

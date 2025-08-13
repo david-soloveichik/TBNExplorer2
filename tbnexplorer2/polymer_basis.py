@@ -5,6 +5,7 @@ from .model import TBN, Monomer
 from .normaliz import NormalizRunner
 from .coffee import COFFEERunner
 from .units import from_molar, get_unit_display_name
+from .polymat_io import PolymatData, PolymatReader, PolymatWriter, check_matrix_hash
 
 
 class Polymer:
@@ -196,38 +197,48 @@ class PolymerBasisComputer:
         try:
             if not os.path.exists(polymat_file):
                 return None
-                
+            
+            # Check if matrix hash matches
             current_hash = self.tbn.compute_matrix_hash()
-            stored_hash = None
-            polymers_data = []
+            if not check_matrix_hash(polymat_file, current_hash):
+                return None
+            
+            # For backward compatibility with the old implementation:
+            # Try to parse file manually to handle edge cases
+            polymers = []
+            has_parse_error = False
             
             with open(polymat_file, 'r') as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith('# MATRIX-HASH:'):
-                        stored_hash = line.split(':', 1)[1].strip()
-                    elif not line.startswith('#') and line:
-                        # Data line - parse polymer counts
-                        parts = line.split()
-                        if not parts:
-                            continue
-                        
-                        # First n_monomers values are monomer counts
-                        n_monomers = len(self.tbn.monomers)
-                        if len(parts) >= n_monomers:
-                            monomer_counts = np.array([int(x) for x in parts[:n_monomers]])
-                            polymers_data.append(monomer_counts)
+                    if line.startswith('#') or not line:
+                        continue
+                    
+                    parts = line.split()
+                    if not parts:
+                        continue
+                    
+                    # Check if we have the right number of values
+                    n_monomers = len(self.tbn.monomers)
+                    if len(parts) < n_monomers:
+                        # Wrong number of columns - skip this line
+                        continue
+                    
+                    # Try to parse monomer counts
+                    try:
+                        monomer_counts = np.array([int(x) for x in parts[:n_monomers]])
+                        polymer = Polymer(monomer_counts, self.tbn.monomers, self.tbn)
+                        polymers.append(polymer)
+                    except ValueError:
+                        # Non-numeric data - this is a parse error
+                        has_parse_error = True
+                        break
             
-            # Check if hashes match
-            if stored_hash is None or stored_hash != current_hash:
+            # If we had parse errors (non-numeric data), return None
+            if has_parse_error:
                 return None
             
-            # Convert to Polymer objects
-            polymers = []
-            for counts in polymers_data:
-                polymer = Polymer(counts, self.tbn.monomers, self.tbn)
-                polymers.append(polymer)
-            
+            # Otherwise return the polymers (could be empty list)
             return polymers
             
         except Exception:
@@ -285,67 +296,32 @@ class PolymerBasisComputer:
             # Sort by concentration in descending order
             sorted_indices = np.argsort(-polymer_concentrations)
             sorted_polymers = [polymers[i] for i in sorted_indices]
-            if polymer_concentrations is not None:
-                sorted_concentrations = polymer_concentrations[sorted_indices]
+            sorted_concentrations = polymer_concentrations[sorted_indices]
         else:
             sorted_polymers = polymers
             sorted_concentrations = None
         
-        # Write the file
-        with open(output_file, 'w') as f:
-            # Write header comments
-            f.write(f"# TBN Polymer Matrix\n")
-            f.write(f"# Number of polymers: {len(sorted_polymers)}\n")
-            f.write(f"# Number of monomers: {len(self.tbn.monomers)}\n")
-            
-            # Write matrix hash for caching
-            matrix_hash = self.tbn.compute_matrix_hash()
-            f.write(f"# MATRIX-HASH: {matrix_hash}\n")
-            if include_concentrations:
-                unit_display = get_unit_display_name(self.tbn.concentration_units)
-                f.write(f"# Concentration units: {unit_display}\n")
-            
-            # Indicate what's included
-            computation_status = []
-            if not has_monomer_concentrations:
-                computation_status.append("no monomer concentrations provided")
-            if not include_free_energies:
-                computation_status.append("free energies not computed")
-            if has_monomer_concentrations and not include_concentrations:
-                computation_status.append("equilibrium concentrations not computed")
-            
-            if computation_status:
-                f.write(f"# Partial computation: {', '.join(computation_status)}\n")
-            
-            # Write column description
-            columns = ["monomer_counts[1..{}]".format(len(self.tbn.monomers))]
-            if include_free_energies:
-                columns.append("free_energy")
-            if include_concentrations:
-                columns.append("concentration")
-            f.write(f"# Columns: {' '.join(columns)}\n")
-            f.write("#\n")
-            
-            # Write polymer data
-            for i, polymer in enumerate(sorted_polymers):
-                # Write monomer counts
-                counts_str = ' '.join(str(int(c)) for c in polymer.monomer_counts)
-                row = [counts_str]
-                
-                # Add free energy if requested
-                if include_free_energies:
-                    free_energy = polymer.compute_free_energy()
-                    row.append(str(free_energy))
-                
-                # Add concentration if available
-                if include_concentrations and sorted_concentrations is not None:
-                    conc_molar = sorted_concentrations[i]
-                    # Convert from Molar to target units
-                    conc_target_units = from_molar(conc_molar, self.tbn.concentration_units)
-                    # Format scientific notation properly
-                    if conc_target_units == 0:
-                        row.append("0.00e0")
-                    else:
-                        row.append(f"{conc_target_units:.2e}")
-                
-                f.write(' '.join(row) + '\n')
+        # Prepare polymer data for PolymatData
+        polymer_arrays = [polymer.monomer_counts for polymer in sorted_polymers]
+        
+        # Compute free energies if requested
+        free_energies = None
+        if include_free_energies:
+            free_energies = np.array([polymer.compute_free_energy() for polymer in sorted_polymers])
+        
+        # Create PolymatData object
+        polymat_data = PolymatData(
+            polymers=polymer_arrays,
+            n_monomers=len(self.tbn.monomers),
+            n_polymers=len(sorted_polymers),
+            matrix_hash=self.tbn.compute_matrix_hash(),
+            free_energies=free_energies,
+            concentrations=sorted_concentrations,
+            concentration_units=get_unit_display_name(self.tbn.concentration_units) if include_concentrations else None,
+            has_free_energies=include_free_energies,
+            has_concentrations=include_concentrations
+        )
+        
+        # Write using PolymatWriter
+        writer = PolymatWriter(output_file)
+        writer.write(polymat_data, from_molar, self.tbn.concentration_units)
