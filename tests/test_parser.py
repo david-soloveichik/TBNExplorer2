@@ -233,6 +233,7 @@ class TestTBNParser:
             ("mon*omer: a b c", "cannot contain \\*"),
             ("mon|omer: a b c", "cannot contain \\|"),
             ("mon:omer: a b c", "cannot contain :"),
+            ("mon\\omer: a b c", "cannot contain \\\\"),
         ]
         
         for content, expected_msg in test_cases:

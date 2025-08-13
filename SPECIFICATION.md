@@ -40,7 +40,7 @@ When UNITS is specified, monomers must have concentrations indicated by a comma 
 Important: An error should be returned if UNITS is present but some monomers lack concentrations, or if UNITS is absent but some monomers have concentrations.
 
 To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
-Monomer names should not have spaces or any of the prohibited symbols ",*|:", and cannot be reserved keywords (currently: UNITS).
+Monomer names should not have spaces or any of the prohibited symbols ",*|:\\".
 
 ## Monomer repetition:
 The same monomer could occur multiple times in the .tbn file. 

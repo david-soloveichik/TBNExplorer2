@@ -166,8 +166,8 @@ class TBNParser:
             remaining = parts[1].strip()
             
             # Validate name doesn't contain special characters or spaces
-            if any(c in name for c in ',*|:'):
-                raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain ,*|:")
+            if any(c in name for c in ',*|:\\'):
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain ,*|:\\")
             if ' ' in name:
                 raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain spaces")
         
