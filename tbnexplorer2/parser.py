@@ -19,7 +19,7 @@ class TBNParser:
             Tuple of (list of Monomer objects, dict of binding site to index, concentration units or None)
             
         Raises:
-            ValueError: If file format is invalid or UNITS/concentration specifications are inconsistent
+            ValueError: If file format is invalid or \\UNITS/concentration specifications are inconsistent
         """
         # First pass: scan for UNITS keyword
         units = None
@@ -34,19 +34,19 @@ class TBNParser:
                 if not line:
                     continue
                 
-                # Check for UNITS keyword
-                if line.startswith('UNITS:'):
+                # Check for \UNITS keyword
+                if line.startswith('\\UNITS:'):
                     if units is not None:
-                        raise ValueError(f"Line {line_number}: Multiple UNITS specifications found")
+                        raise ValueError(f"Line {line_number}: Multiple \\UNITS specifications found")
                     try:
                         units = line.split(':', 1)[1].strip()
                         if units not in ['nM', 'pM', 'uM', 'mM', 'M']:
                             raise ValueError(f"Line {line_number}: Invalid units '{units}'. Must be one of: nM, pM, uM, mM, M")
                     except IndexError:
-                        raise ValueError(f"Line {line_number}: Invalid UNITS format. Expected 'UNITS: <unit>'")
+                        raise ValueError(f"Line {line_number}: Invalid \\UNITS format. Expected '\\UNITS: <unit>'")
                     continue
                 
-                # If we encounter a non-UNITS, non-comment line, break to start monomer parsing
+                # If we encounter a non-\UNITS, non-comment line, break to start monomer parsing
                 break
         
         # Second pass: parse monomers
@@ -68,8 +68,8 @@ class TBNParser:
                 if not line:
                     continue
                 
-                # Skip UNITS lines during monomer parsing
-                if line.startswith('UNITS:'):
+                # Skip \UNITS lines during monomer parsing
+                if line.startswith('\\UNITS:'):
                     continue
                 
                 # Parse the line
@@ -77,22 +77,33 @@ class TBNParser:
                 if monomer_data:
                     name, binding_sites, concentration = monomer_data
                     
-                    # Check consistency of UNITS and concentration specifications
-                    if units is not None:  # UNITS specified - all monomers must have concentrations
+                    # Check consistency of \UNITS and concentration specifications
+                    if units is not None:  # \UNITS specified - all monomers must have concentrations
                         if concentration is None:
                             raise ValueError(
-                                f"Line {line_number}: UNITS specified but monomer lacks concentration. "
-                                "When UNITS is present, all monomers must have concentrations."
+                                f"Line {line_number}: \\UNITS specified but monomer lacks concentration. "
+                                "When \\UNITS is present, all monomers must have concentrations."
                             )
-                    else:  # No UNITS - no monomers can have concentrations
+                    else:  # No \UNITS - no monomers can have concentrations
                         if concentration is not None:
                             raise ValueError(
-                                f"Line {line_number}: Monomer has concentration but no UNITS specified. "
-                                "When concentrations are used, UNITS must be specified."
+                                f"Line {line_number}: Monomer has concentration but no \\UNITS specified. "
+                                "When concentrations are used, \\UNITS must be specified."
                             )
                     
                     # Check for conflicts between monomer names and binding sites
                     if name:
+                        # Check if monomer name starts with backslash (reserved for keywords)
+                        if name.startswith('\\'):
+                            raise ValueError(
+                                f"Line {line_number}: Monomer name '{name}' cannot start with backslash (\\). "
+                                "Backslash is reserved for keywords."
+                            )
+                        # Check if monomer name is a reserved keyword
+                        if name in ['UNITS', 'MATRIX-HASH']:
+                            raise ValueError(
+                                f"Line {line_number}: Monomer name '{name}' is a reserved keyword"
+                            )
                         # Check if monomer name conflicts with existing binding sites
                         if name in binding_site_index:
                             raise ValueError(
@@ -123,7 +134,7 @@ class TBNParser:
         if not monomers:
             raise ValueError("No valid monomers found in file")
         
-        # Handle monomer repetition when UNITS is present
+        # Handle monomer repetition when \UNITS is present
         if units is not None:
             monomers = TBNParser._aggregate_identical_monomers(monomers, binding_site_index)
         
@@ -167,7 +178,7 @@ class TBNParser:
             remaining = parts[0].strip()
             try:
                 concentration = float(parts[1].strip())
-                # Only disallow negative concentrations when UNITS is not present
+                # Only disallow negative concentrations when \UNITS is not present
                 if concentration < 0 and units is None:
                     raise ValueError(f"Line {line_number}: Negative concentration not allowed")
             except ValueError as e:
@@ -185,6 +196,13 @@ class TBNParser:
             # Validate binding site string
             if any(c in site_str for c in ',|:'):
                 raise ValueError(f"Line {line_number}: Invalid binding site '{site_str}' - cannot contain ,|:")
+            
+            # Check if binding site starts with backslash (reserved for keywords)
+            if site_str.startswith('\\'):
+                raise ValueError(
+                    f"Line {line_number}: Binding site '{site_str}' cannot start with backslash (\\). "
+                    "Backslash is reserved for keywords."
+                )
             
             # Check if it's a star binding site
             if site_str.endswith('*'):

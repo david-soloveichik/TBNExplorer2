@@ -1,6 +1,7 @@
 # TBN Polymer Matrix
 # Number of polymers: 13
 # Number of monomers: 8
+\MATRIX-HASH: 370e87c310dc70eb8ac53e732b0faa9dc68e3d8a11da152b44b4c70f9b1d7c89
 # Concentration units: nanoMolar (nM)
 # Columns: monomer_counts[1..8] free_energy concentration
 #

@@ -15,7 +15,7 @@ class TestCLIUnits(unittest.TestCase):
         # Create a temporary TBN file with concentrations
         self.temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False)
         self.temp_file.write("""# Test TBN file with concentrations
-UNITS: nM
+\\UNITS: nM
 A: a a*, 100.0
 B: b b*, 50.0
 """)

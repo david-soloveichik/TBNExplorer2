@@ -1,0 +1,18 @@
+
+Our code will have multiple conceptual parts:
+
+(1) Given a TBN, compute the set of "unsplittable" polymers H. This is defined in terms of a Hilbert basis of a specific linear problem.
+
+(2) Compute the free energies of each polymer in H. For simplicity, this will just be the negation of the total number of bonds that can form in the polymer.
+
+(3) Compute concentrations of all the polymers in H
+
+
+===============
+
+
+
+
+# Caching polymer basis
+The most computationally intensive part of the pipeline is computing the polymer basis with Normaliz. Using COFFEE is very fast.
+Thus if we want to recompute polymer concentrations for new input monomer concentrations without changing what the monomers are, we should avoid re-computing the polymer basis. 

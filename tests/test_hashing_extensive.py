@@ -299,7 +299,7 @@ class TestCachingWorkflowExtensive:
                 content = f.read()
             
             expected_hash = tbn.compute_matrix_hash()
-            assert f"# MATRIX-HASH: {expected_hash}" in content
+            assert f"\\MATRIX-HASH: {expected_hash}" in content
             
             # Load cached polymers
             cached = computer.load_cached_polymer_basis(str(polymat_file))
@@ -399,7 +399,7 @@ class TestCachingWorkflowExtensive:
             
             # 1. Malformed hash line
             with open(polymat_file, 'w') as f:
-                f.write("# MATRIX-HASH: not_a_valid_hash\n")
+                f.write("\\MATRIX-HASH: not_a_valid_hash\n")
                 f.write("1 0 0 0\n")
             
             cached = computer.load_cached_polymer_basis(str(polymat_file))
@@ -407,7 +407,7 @@ class TestCachingWorkflowExtensive:
             
             # 2. Invalid polymer data
             with open(polymat_file, 'w') as f:
-                f.write(f"# MATRIX-HASH: {tbn.compute_matrix_hash()}\n")
+                f.write(f"\\MATRIX-HASH: {tbn.compute_matrix_hash()}\n")
                 f.write("not_a_number 0 0 0\n")
             
             cached = computer.load_cached_polymer_basis(str(polymat_file))
@@ -415,7 +415,7 @@ class TestCachingWorkflowExtensive:
             
             # 3. Wrong number of monomer counts
             with open(polymat_file, 'w') as f:
-                f.write(f"# MATRIX-HASH: {tbn.compute_matrix_hash()}\n")
+                f.write(f"\\MATRIX-HASH: {tbn.compute_matrix_hash()}\n")
                 f.write("1 0\n")  # Only 2 values but TBN has 4 monomers
             
             cached = computer.load_cached_polymer_basis(str(polymat_file))
@@ -439,7 +439,7 @@ class TestCachingWorkflowExtensive:
             
             # Test with truncated hash
             with open(polymat_file, 'w') as f:
-                f.write(f"# MATRIX-HASH: {real_hash[:32]}\n")  # Only half the hash
+                f.write(f"\\MATRIX-HASH: {real_hash[:32]}\n")  # Only half the hash
                 f.write("1 0 0 0\n")
             
             cached = computer.load_cached_polymer_basis(str(polymat_file))

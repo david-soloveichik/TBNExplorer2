@@ -100,7 +100,8 @@ class PolymatReader:
         
         with open(self.file_path, 'r') as f:
             for line in f:
-                if line.startswith('#') or not line.strip():
+                # Skip comment lines and keyword lines starting with backslash
+                if line.startswith('#') or line.startswith('\\') or not line.strip():
                     continue
                 
                 # Parse data line
@@ -152,7 +153,8 @@ class PolymatReader:
         
         with open(self.file_path, 'r') as f:
             for line in f:
-                if line.startswith('#') or not line.strip():
+                # Skip comment lines and keyword lines starting with backslash
+                if line.startswith('#') or line.startswith('\\') or not line.strip():
                     continue
                 
                 polymer_data = self._parse_data_line(line, header_info)
@@ -181,7 +183,8 @@ class PolymatReader:
         
         with open(self.file_path, 'r') as f:
             for line in f:
-                if not line.startswith('#'):
+                # Header includes comments and keyword lines
+                if not line.startswith('#') and not line.startswith('\\'):
                     # End of header
                     break
                 
@@ -197,8 +200,12 @@ class PolymatReader:
                         header_info['n_polymers'] = int(line.split(':')[1].strip())
                     except (ValueError, IndexError):
                         pass
-                elif 'MATRIX-HASH:' in line:
-                    header_info['matrix_hash'] = line.split(':', 1)[1].strip()
+                elif '\\MATRIX-HASH:' in line:
+                    # Extract hash after removing comment marker if present
+                    hash_line = line
+                    if hash_line.startswith('#'):
+                        hash_line = hash_line[1:].strip()
+                    header_info['matrix_hash'] = hash_line.split(':', 1)[1].strip()
                 elif 'Concentration units:' in line:
                     header_info['concentration_units'] = line.split(':', 1)[1].strip()
                 elif 'Columns:' in line:
@@ -210,7 +217,7 @@ class PolymatReader:
         if header_info['n_monomers'] is None:
             with open(self.file_path, 'r') as f:
                 for line in f:
-                    if not line.startswith('#') and line.strip():
+                    if not line.startswith('#') and not line.startswith('\\\\') and line.strip():
                         parts = line.strip().split()
                         if parts:
                             # Assume first data line has correct number of monomer counts
@@ -342,7 +349,7 @@ class PolymatWriter:
         f.write(f"# Number of monomers: {data.n_monomers}\n")
         
         if data.matrix_hash:
-            f.write(f"# MATRIX-HASH: {data.matrix_hash}\n")
+            f.write(f"\\MATRIX-HASH: {data.matrix_hash}\n")
         
         if data.concentration_units:
             f.write(f"# Concentration units: {data.concentration_units}\n")

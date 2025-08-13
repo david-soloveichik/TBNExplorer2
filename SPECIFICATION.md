@@ -21,7 +21,7 @@ We need to be efficient in representing the matrix A as we will be doing some li
 The TBN is input from a .tbn file that is given as a command line argument. Here is an example of the input format. Empty lines, or lines just containing comments are ok.
 ```
 # this line is a comment
-UNITS: nM
+\UNITS: nM
 monomer1: a a* b2 b1, 100
 b2* b2* b1 b1, 75.5  # this is a comment
 a b2* b1, 50.7
@@ -30,7 +30,7 @@ Note that "#" followed by anything is a comment and should be ignored.
 
 ## Units specification
 The presence or absence of a `UNITS` keyword determines the type of .tbn file:
-- **With UNITS**: All monomers MUST have concentrations specified. The UNITS line specifies the concentration units and has the format `UNITS: <unit>` where `<unit>` can be: nM (nanoMolar), pM (picoMolar), uM (microMolar), mM (milliMolar), or M (Molar).
+- **With UNITS**: All monomers MUST have concentrations specified. The UNITS line specifies the concentration units and has the format `\UNITS: <unit>` where `<unit>` can be: nM (nanoMolar), pM (picoMolar), uM (microMolar), mM (milliMolar), or M (Molar).
 - **Without UNITS**: NO monomers can have concentrations specified.
 
 The UNITS line can appear anywhere before the first monomer definition (comments and empty lines are allowed before it).
@@ -44,8 +44,8 @@ Monomer names should not have spaces or any of the prohibited symbols ",*|:", an
 
 ## Monomer repetition:
 The same monomer could occur multiple times in the .tbn file. 
-- Without UNITS: Treat the two identical monomers independently 
-- With UNITS: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
+- Without \UNITS: Treat the two identical monomers independently 
+- With \UNITS: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
 
 
 # Polymers 
@@ -158,6 +158,6 @@ The output should be restricted to those polymers whose concentration is above (
 The most computationally intensive part of the pipeline is computing the polymer basis with Normaliz. Other parts, like using COFFEE, are typically much faster.
 Thus if we want to recompute polymer concentrations for new input monomer concentrations without changing what the monomers are, we should avoid re-computing the polymer basis. We do this as follows:
 
-When `tbnexplorer2` is run with an input .tbn file, we create the A matrix and find the corresponding .tbnpolymat file (using the naming rules above) if it exists. If the .tbnpolymat has the keyword: MATRIX-HASH: <hash>, we compare the hash of A with <hash>. If the hashes match, we can skip recomputing the polymer basis and instead load it from the .tbnpolymat file. Otherwise, we compute the polymer basis as normal and save the new hash. 
+When `tbnexplorer2` is run with an input .tbn file, we create the A matrix and find the corresponding .tbnpolymat file (using the naming rules above) if it exists. If the .tbnpolymat has the keyword: \MATRIX-HASH: <hash>, we compare the hash of A with <hash>. If the hashes match, we can skip recomputing the polymer basis and instead load it from the .tbnpolymat file. Otherwise, we compute the polymer basis as normal and save the new hash. 
 
-The keyword MATRIX-HASH: <hash> should be somewhere close to the top of the .tbnpolymat file but we can include comments above or below it. The standard output of `tbnexplorer2` should indicate whether is had to re-generate the polymer basis or not (hashes matched).
+The keyword `\MATRIX-HASH: <hash>` should be somewhere close to the top of the .tbnpolymat file (without a comment marker prefix). The standard output of `tbnexplorer2` should indicate whether it had to re-generate the polymer basis or not (hashes matched).

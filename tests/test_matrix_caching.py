@@ -95,7 +95,7 @@ class TestPolymerBasisCaching:
             f.write("# TBN Polymer Matrix\n")
             f.write("# Number of polymers: 2\n")
             f.write("# Number of monomers: 2\n")
-            f.write(f"# MATRIX-HASH: {matrix_hash}\n")
+            f.write(f"\\MATRIX-HASH: {matrix_hash}\n")
             f.write("# Concentration units: nM\n")
             f.write("# Columns: monomer_counts[1..2] free_energy concentration\n")
             f.write("#\n")
@@ -217,4 +217,4 @@ class TestPolymerBasisCaching:
                 content = f.read()
             
             expected_hash = tbn.compute_matrix_hash()
-            assert f"# MATRIX-HASH: {expected_hash}" in content
+            assert f"\\MATRIX-HASH: {expected_hash}" in content

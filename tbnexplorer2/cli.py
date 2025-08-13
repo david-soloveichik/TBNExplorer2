@@ -22,7 +22,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="TBN Explorer 2 - Analyze Thermodynamics of Binding Networks",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=r"""
 Examples:
   # Compute polymer basis for a TBN file (generates .tbnpolymat only)
   tbnexplorer2 example.tbn
@@ -41,10 +41,10 @@ Examples:
 
 TBN File Format:
   Concentration units are specified directly in the .tbn file using:
-    UNITS: nM    (or pM, uM, mM, M)
+    \UNITS: nM    (or pM, uM, mM, M)
   
-  If UNITS is specified, ALL monomers must have concentrations.
-  If UNITS is not specified, NO monomers can have concentrations.
+  If \UNITS is specified, ALL monomers must have concentrations.
+  If \UNITS is not specified, NO monomers can have concentrations.
         """
     )
     

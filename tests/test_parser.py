@@ -60,7 +60,7 @@ class TestTBNParser:
     
     def test_parse_monomer_with_concentration(self):
         """Test parsing a monomer with concentration."""
-        content = "UNITS: nM\na b c, 100.5"
+        content = "\\UNITS: nM\na b c, 100.5"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
@@ -75,7 +75,7 @@ class TestTBNParser:
     
     def test_parse_named_monomer_with_concentration(self):
         """Test parsing a named monomer with concentration."""
-        content = "UNITS: nM\nmol1: a b c, 50.7"
+        content = "\\UNITS: nM\nmol1: a b c, 50.7"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
@@ -162,7 +162,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
             
-            with pytest.raises(ValueError, match="Monomer has concentration but no UNITS specified"):
+            with pytest.raises(ValueError, match=r"Monomer has concentration but no \\UNITS specified"):
                 TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
@@ -300,7 +300,7 @@ class TestTBNParser:
     
     def test_units_parsing(self):
         """Test that UNITS keyword is parsed correctly."""
-        content = "UNITS: uM\na b c, 100"
+        content = "\\UNITS: uM\na b c, 100"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
@@ -317,7 +317,7 @@ class TestTBNParser:
         """Test that UNITS works with comments before it."""
         content = """# This is a comment
 # Another comment
-UNITS: mM
+\\UNITS: mM
 # Comment after units
 a b c, 50"""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
@@ -348,7 +348,7 @@ a b c, 50"""
     
     def test_invalid_units_error(self):
         """Test that invalid units raise an error."""
-        content = "UNITS: invalid\na b c, 100"
+        content = "\\UNITS: invalid\na b c, 100"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
@@ -360,7 +360,7 @@ a b c, 50"""
     
     def test_units_without_concentrations_error(self):
         """Test that UNITS specified but no concentrations raises error."""
-        content = "UNITS: nM\na b c"
+        content = "\\UNITS: nM\na b c"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
@@ -372,14 +372,14 @@ a b c, 50"""
     
     def test_multiple_units_error(self):
         """Test that multiple UNITS specifications raise an error."""
-        content = """UNITS: nM
-UNITS: uM
+        content = """\\UNITS: nM
+\\UNITS: uM
 a b c, 100"""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
             f.write(content)
             f.flush()
             
-            with pytest.raises(ValueError, match="Multiple UNITS specifications found"):
+            with pytest.raises(ValueError, match=r"Multiple \\UNITS specifications found"):
                 TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
@@ -390,7 +390,7 @@ class TestMonomerRepetition:
     
     def test_identical_monomers_with_units_aggregate(self):
         """Test that identical monomers with UNITS aggregate their concentrations."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 a b c*, 100
 a b c*, 50
 d e*, 25"""
@@ -423,7 +423,7 @@ d e*, 25"""
     
     def test_identical_monomers_different_order_aggregate(self):
         """Test that monomers with same binding sites in different order aggregate."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 a b c*, 100
 c* b a, 50"""
         
@@ -441,7 +441,7 @@ c* b a, 50"""
     
     def test_identical_monomers_with_negative_concentrations(self):
         """Test that negative concentrations are allowed and sum correctly with UNITS."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 a b c*, 100
 a b c*, -30
 a b c*, 50"""
@@ -460,7 +460,7 @@ a b c*, 50"""
     
     def test_negative_final_concentration_error(self):
         """Test that negative final concentration after aggregation raises error."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 a b c*, 50
 a b c*, -100"""
         
@@ -475,7 +475,7 @@ a b c*, -100"""
     
     def test_identical_named_monomers_aggregate(self):
         """Test that identical named monomers aggregate."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 monomer1: a b c*, 100
 monomer1: a b c*, 50"""
         
@@ -494,7 +494,7 @@ monomer1: a b c*, 50"""
     
     def test_different_monomers_dont_aggregate(self):
         """Test that different monomers don't aggregate."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 a b c*, 100
 a b d*, 50"""
         
@@ -532,7 +532,7 @@ d e*"""
     
     def test_complex_aggregation_scenario(self):
         """Test complex scenario with multiple groups of identical monomers."""
-        content = """UNITS: nM
+        content = """\\UNITS: nM
 # Group 1: identical monomers
 a b*, 100
 b* a, 50

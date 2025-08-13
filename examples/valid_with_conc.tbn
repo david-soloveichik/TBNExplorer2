@@ -1,6 +1,6 @@
 # Valid TBN with concentrations that satisfies star-limiting
 # Each binding site has at least as many unstar as star
-UNITS: nM
+\UNITS: nM
 
 MA: a b, 100
 MB: a* b*, 50

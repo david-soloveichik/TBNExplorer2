@@ -145,10 +145,10 @@ class TestPolymatWriter:
             assert "# TBN Polymer Matrix" in lines[0]
             assert "# Number of polymers: 3" in lines[1]
             assert "# Number of monomers: 3" in lines[2]
-            assert "# MATRIX-HASH: abc123" in lines[3]
+            assert "\\MATRIX-HASH: abc123" in lines[3]
             
-            # Check data lines
-            data_lines = [line.strip() for line in lines if not line.startswith('#') and line.strip()]
+            # Check data lines (exclude comments and keyword lines)
+            data_lines = [line.strip() for line in lines if not line.startswith('#') and not line.startswith('\\') and line.strip()]
             assert len(data_lines) == 3
             assert data_lines[0] == "1 0 2"
             assert data_lines[1] == "0 3 1"
@@ -246,7 +246,7 @@ class TestPolymatReader:
         content = """# TBN Polymer Matrix
 # Number of polymers: 3
 # Number of monomers: 3
-# MATRIX-HASH: test123
+\\MATRIX-HASH: test123
 # Columns: monomer_counts[1..3]
 #
 1 0 2
@@ -322,7 +322,7 @@ class TestPolymatReader:
         content = """# TBN Polymer Matrix
 # Number of polymers: 100
 # Number of monomers: 5
-# MATRIX-HASH: xyz789
+\\MATRIX-HASH: xyz789
 # Columns: monomer_counts[1..5] free_energy
 #
 1 0 0 0 0 -1.0
@@ -440,7 +440,7 @@ class TestConvenienceFunctions:
         content = """# TBN Polymer Matrix
 # Number of polymers: 1
 # Number of monomers: 2
-# MATRIX-HASH: hash123
+\\MATRIX-HASH: hash123
 # Columns: monomer_counts[1..2]
 #
 1 1

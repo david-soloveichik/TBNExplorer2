@@ -1,6 +1,6 @@
 # TBN example with concentrations for all monomers
 # All monomers must have concentrations
-UNITS: nM
+\UNITS: nM
 
 # Named monomer with concentration
 monomer1: a a* b2 b1, 100

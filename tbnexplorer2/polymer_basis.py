@@ -211,7 +211,8 @@ class PolymerBasisComputer:
             with open(polymat_file, 'r') as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith('#') or not line:
+                    # Skip comments and keyword lines
+                    if line.startswith('#') or line.startswith('\\') or not line:
                         continue
                     
                     parts = line.split()
