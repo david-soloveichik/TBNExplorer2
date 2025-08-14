@@ -14,7 +14,11 @@
       "Bash(grep:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/tmp"
+    ]
   },
   "hooks": {
     "Notification": [
