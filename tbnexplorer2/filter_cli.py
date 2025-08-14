@@ -27,9 +27,11 @@ Examples:
   # Filter with concentration percent limit (show only polymers > 1.5% of total)
   tbnexplorer2-filter example.tbn B C --percent-limit 1.5
   
-  # Filter by unnamed monomers using their binding sites
-  tbnexplorer2-filter example.tbn "a1* a2* b1* b2*"
-  tbnexplorer2-filter example.tbn "a2 b1" "c1* c2*"
+  # Filter using constraints file for advanced filtering
+  tbnexplorer2-filter example.tbn --constraints-file constraints.txt
+  
+  # Show all polymers (no filtering)
+  tbnexplorer2-filter example.tbn
         """
     )
     
@@ -41,7 +43,7 @@ Examples:
     parser.add_argument(
         'monomer_names',
         nargs='*',
-        help='Space-separated list of monomer names to filter by. For named monomers, use their name (e.g., B, C). For unnamed monomers, use their binding sites (e.g., "a1* a2* b1* b2*"). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).'
+        help='Space-separated list of monomer names to filter by. Only named monomers can be filtered (e.g., B, C, output). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).'
     )
     
     parser.add_argument(
@@ -59,11 +61,28 @@ Examples:
         help='Only show polymers with concentration > P%% of total concentration'
     )
     
+    parser.add_argument(
+        '--constraints-file',
+        type=str,
+        metavar='FILE',
+        help='File containing advanced filtering constraints (CONTAINS or EXACTLY)'
+    )
+    
     args = parser.parse_args()
     
     # Validate input file
     if not Path(args.tbn_file).exists():
         print(f"Error: Input file '{args.tbn_file}' not found", file=sys.stderr)
+        sys.exit(1)
+    
+    # Validate constraints file compatibility
+    if args.constraints_file and args.monomer_names:
+        print(f"Error: Cannot specify monomer names on command line when using --constraints-file", file=sys.stderr)
+        sys.exit(1)
+    
+    # Validate constraints file exists if provided
+    if args.constraints_file and not Path(args.constraints_file).exists():
+        print(f"Error: Constraints file '{args.constraints_file}' not found", file=sys.stderr)
         sys.exit(1)
     
     # Validate percent limit if provided
@@ -82,19 +101,38 @@ Examples:
         polymer_filter = PolymerFilter(args.tbn_file)
         
         # Filter polymers
-        filtered_polymers = polymer_filter.filter_by_monomers(
-            args.monomer_names,
-            percent_limit=args.percent_limit,
-            max_count=args.num
-        )
+        if args.constraints_file:
+            # Use constraints file filtering
+            filtered_polymers = polymer_filter.filter_by_constraints_file(
+                args.constraints_file,
+                percent_limit=args.percent_limit,
+                max_count=args.num
+            )
+            constraints_description = f"constraints from {Path(args.constraints_file).name}"
+        else:
+            # Use regular monomer name filtering
+            filtered_polymers = polymer_filter.filter_by_monomers(
+                args.monomer_names,
+                percent_limit=args.percent_limit,
+                max_count=args.num
+            )
+            constraints_description = None
         
         # Format and output results
-        output = polymer_filter.format_output(
-            filtered_polymers,
-            args.monomer_names,
-            percent_limit=args.percent_limit,
-            max_count=args.num
-        )
+        if args.constraints_file:
+            output = polymer_filter.format_output_with_constraints(
+                filtered_polymers,
+                constraints_description,
+                percent_limit=args.percent_limit,
+                max_count=args.num
+            )
+        else:
+            output = polymer_filter.format_output(
+                filtered_polymers,
+                args.monomer_names,
+                percent_limit=args.percent_limit,
+                max_count=args.num
+            )
         
         print(output)
         

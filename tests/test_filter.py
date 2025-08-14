@@ -345,7 +345,7 @@ C: c1 c2, 100"""
         """Test handling .tbnpolymat file without concentrations."""
         # Create TBN file
         tbn_file = temp_dir / "no_conc.tbn"
-        tbn_file.write_text("\\UNITS: nM\na b, 0\na* b*, 0")
+        tbn_file.write_text("\\UNITS: nM\na b >M1, 0\na* b* >M2, 0")
         
         # Create polymat file without concentrations
         polymat_content = """# TBN Polymer Matrix
@@ -366,7 +366,7 @@ C: c1 c2, 100"""
         assert filter.polymer_data.concentrations is None
         
         # Should still be able to filter
-        results = filter.filter_by_monomers(['a b'])
+        results = filter.filter_by_monomers(['M1'])
         assert len(results) == 1
         assert results[0][3] is None  # No concentration
     
@@ -374,7 +374,7 @@ C: c1 c2, 100"""
         """Test handling .tbnpolymat file without free energies."""
         # Create TBN file
         tbn_file = temp_dir / "no_fe.tbn"
-        tbn_file.write_text("\\UNITS: nM\na b, 0\na* b*, 0")
+        tbn_file.write_text("\\UNITS: nM\na b >M1, 0\na* b* >M2, 0")
         
         # Create polymat file without free energies
         polymat_content = """# TBN Polymer Matrix
@@ -396,7 +396,7 @@ C: c1 c2, 100"""
         assert filter.polymer_data.has_concentrations == False  # No conc without FE
         
         # Should still be able to filter
-        results = filter.filter_by_monomers(['a b'])
+        results = filter.filter_by_monomers(['M1'])
         assert len(results) == 1
         assert results[0][2] is None  # No free energy
         assert results[0][3] is None  # No concentration

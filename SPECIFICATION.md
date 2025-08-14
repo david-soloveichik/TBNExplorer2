@@ -5,7 +5,7 @@ We are working with thermodynamics of abstract chemical systems (the model is ca
 We will be building a Python library. The functionality should also be accessible via a command line (CLI) tool called `tbnexplorer2`.
 
 # Input file encoding (.tbn) and TBN representation
-A binding site is a symbol like "a" or "ahu34_8" or "5" (any string not containing white space nor any of the following: ",*|:" which will have special meaning). There are two types of binding sites, unstar and star. Star binding sites always have a "*" as the last character. The idea is that corresponding star and unstar binding sites bind (they are complementary).
+A binding site is a symbol like "a" or "ahu34_8" or "5" (any string not containing white space nor any of the following: ">,*|:\\" which will have special meaning). There are two types of binding sites, unstar and star. Star binding sites always have a "*" as the last character. The idea is that corresponding star and unstar binding sites bind (they are complementary).
 Examples: 
     Unstar binding sites: a, 2, ab, 12_a
     Corresponding (complementary) star binding sites: a*, 2*, 12_a*
@@ -28,27 +28,31 @@ b2 b1* >C
 b2* b2* b1 b1, 75.5  # this is a comment
 a b2* b1, 50.7
 ```
-Note that "#" followed by anything is a comment and should be ignored.
+Note that "#" followed by anything is a comment and should be ignored. 
+The number following a comma is the concentration of that monomer. 
+`<name>:` and `><name>` are two different ways to specify monomer names (see below).
+`\UNITS:` is a keyword (see below). 
 
-## Units specification
+## Monomer names
+Monomers can have names which is indicated by a name following by ":" prior to the monomer specification.
+They can also be indicated by ">" followed by the monomer name after the monomer specification.
+To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
+Monomer names should not have spaces or any of the prohibited symbols ">,*|:\\".
+
+## Units and concentrations specification
 The presence or absence of a `UNITS` keyword determines the type of .tbn file:
-- **With UNITS**: All monomers MUST have concentrations specified. The UNITS line specifies the concentration units and has the format `\UNITS: <unit>` where `<unit>` can be: nM (nanoMolar), pM (picoMolar), uM (microMolar), mM (milliMolar), or M (Molar).
+- **With UNITS**: All monomers MUST have concentrations specified. The UNITS line specifies the concentration units and has the format `\UNITS: <unit>` where `<unit>` can be: `nM` (nanoMolar), `pM` (picoMolar), `uM` (microMolar), `mM` (milliMolar), or `M` (Molar).
 - **Without UNITS**: NO monomers can have concentrations specified.
 
 The UNITS line can appear anywhere before the first monomer definition (comments and empty lines are allowed before it).
 
-Monomers can have names which is indicated by a name following by ":" prior to the monomer specification.
-They can also be indicated by ">" followed by the monomer name after the monomer specification.
-When UNITS is specified, monomers must have concentrations indicated by a comma followed by the concentration after the monomer specification.
+When UNITS is specified, monomers must have concentrations indicated by a _comma_ followed by the concentration after the monomer specification.
 Important: An error should be returned if UNITS is present but some monomers lack concentrations, or if UNITS is absent but some monomers have concentrations.
-
-To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
-Monomer names should not have spaces or any of the prohibited symbols ">,*|:\\".
 
 ## Monomer repetition:
 The same monomer could occur multiple times in the .tbn file. 
-- Without \UNITS: Treat the two identical monomers independently 
-- With \UNITS: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
+- Without `\UNITS`: Treat the two identical monomers independently 
+- With `\UNITS`: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
 
 
 # Polymers 
@@ -81,7 +85,7 @@ Now we want to find the Hilbert basis of the cone corresponding to solutions of 
 Important: The Hilbert basis H may be very large! There could be hundreds of thousands of vectors in H. Thus these operations need to be very efficient. 
 
 We optionally save the polymer basis into a user-friendly text file. If the command line option `--user-friendly-polymer-basis` is given to out CLI tool `tbnexplorer2`, it should do the following: 
-If given [example].tbn as input, it should create a file called [example]-polymer-basis.txt. This file should represent the polymers in the polymer basis in the following user-friendly way:
+If given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.txt`. This file should represent the polymers in the polymer basis in the following user-friendly way:
 - There should be an empty line between polymers
 - Each polymer p is represented by its monomers, one per line
     - The line should start with "n | " where n is the multiplicity of the monomer in p
@@ -107,7 +111,7 @@ The big picture is that we want to compute the equilibrium concentrations of all
 Please see `/Users/dsolov/Documents/ResearchTools/coffee/README.md` for COFFEE documentation. Roughly, it takes two input files: CFE and CON. 
 - The CFE file contains the following matrix: Each line corresponds to a polymer in the polymer basis (i.e., counts of monomers in that polymer), followed by the free energy of that polymer. 
 - The CON file contains the concentration of each monomer, one per line. So there should be as many lines as columns in the CFE file minus one (the free energy). The monomer concentrations should be as given in the input .tbn file, _in units of Molar_ (see below).
-Use the `-o [filename]` flag for `coffee-cli` to write its output in [filename]. The output file will contain a space-separated list of polymer concentrations _in units of Molar_ (see below), in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
+Use the `-o <filename>` flag for `coffee-cli` to write its output in `<filename>`. The output file will contain a space-separated list of polymer concentrations _in units of Molar_ (see below), in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
 
 Important: For systems of interest, the polymer basis can be quite large (hundreds of thousands of polymers). COFFEE can handle CFE files of this size. We need to make sure that our code can handle it as well.
 
@@ -115,7 +119,7 @@ Important: For systems of interest, the polymer basis can be quite large (hundre
 This file should be in the same format at the CFE file for `coffee-cli` described above, with an additional column for the concentration of that polymer computed by `coffee-cli`. 
 The polymers should be **sorted** in order of decreasing concentration. 
 There should also be some comments on top of the file indicating things like how many polymers there are in the polymer basis, and whether only partial computation was done (see below).
-If the original input file was `[example].tbn`, this file should be called `[example].tbnpolymat`
+If the original input file was `<example>.tbn`, this file should be called `<example>.tbnpolymat`
 
 
 # Partial computations
@@ -129,20 +133,18 @@ The concentration units are specified directly in the .tbn file using the `UNITS
 
 
 # Filtering output .tbnpolymat file and user-friendly presentation with `tbnexplorer2-filter`
-The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file.
-
+The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file. 
 We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 
 
 The `tbnexplorer2-filter` tool requires that the input .tbn file contains a `UNITS` keyword and monomer concentrations. If the .tbn file does not have `UNITS` specified, the tool will return an error, as it cannot function without concentration information.
 
-The next thing on the command line is a space-separated list of _monomer names_: `m1 m2 ...`
-
-The tool should output to the standard output only the polymers containing _all_ the monomers `m1 m2 ...`. If a monomer name repeats multiple times, we take this as the lower bound on the multiplicity of that monomer in the polymers to return.
+The next thing on the command line is a space-separated list of _monomer names_: `<m1> <m2> ...`
+The tool should output to the standard output only the polymers containing _all_ the monomers `m1 m2 ...`. If a monomer name repeats multiple times, we take this as the lower bound on the multiplicity of that monomer in the polymers to return. Order is ignored (we are looking at vectors only.)
 
 If no monomer names are specified as input, then we do not do any filtering by monomer inclusion and return all polymers. (The output limits described below would still apply.)
 
 ## Output format
-The output format should be user-friendly like in the `[example]-polymer-basis.txt` file, except that polymer concentrations are listed. 
+The output format should be user-friendly like in the `<example>-polymer-basis.txt` file, except that polymer concentrations are listed. 
 The order of the polymers should be in order of decreasing concentration.
 The tool should also output what fraction (percent) of the _total concentration_ of all polymers in .tbnpolymat is the sum of the concentrations of the polymers matching the filtering criteria.
 To save space, we should not output the free energies of the complexes.
@@ -155,6 +157,14 @@ First, we can limit the maximum number of polymers output with the optional `--n
 
 Second, we add an optional command line argument `--percent-limit p` (short `-p`) where p is a percent number (real-value). 
 The output should be restricted to those polymers whose concentration is above (p/100) fraction of the _total concentration_ of all polymers in the .tbnpolymat file. 
+
+## Advanced filtering with constraints file
+For more advanced filtering, the user can specify an optional `--constraints-file <filename>` argument. If this argument is given, no monomers should be specified on the command line and all the constraints should be only in the given constraints text file. 
+
+The following constraints are allowed in the constraints file, one per line. As before, `<m1> <m2> ....` are monomer names. 
+- `CONTAINS <m1> <m2> ...`: This is the same as specifying the monomers `<m1> <m2> ...` on the command line (see above).
+- `EXACTLY <m1> <m2> ...`: This means only the polymer consisting exactly of the monomers `<m1> <m2> ...` and no other monomers. As with `CONTAINS`, multiplicity counts.
+If multiple constraints are given (multiple lines), they should be treated as an OR. In other words, a polymer should be returned if it satisfies at least one of the constraints. The outputted polymers matching the constraints should always be in global order of decreasing concentration.
 
 
 # Caching polymer basis
