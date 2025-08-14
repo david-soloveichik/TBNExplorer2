@@ -23,6 +23,8 @@ The TBN is input from a .tbn file that is given as a command line argument. Here
 # this line is a comment
 \UNITS: nM
 monomer1: a a* b2 b1, 100
+b a c* >monomer2, 10.5
+b2 b1* >C
 b2* b2* b1 b1, 75.5  # this is a comment
 a b2* b1, 50.7
 ```
@@ -36,11 +38,12 @@ The presence or absence of a `UNITS` keyword determines the type of .tbn file:
 The UNITS line can appear anywhere before the first monomer definition (comments and empty lines are allowed before it).
 
 Monomers can have names which is indicated by a name following by ":" prior to the monomer specification.
+They can also be indicated by ">" followed by the monomer name after the monomer specification.
 When UNITS is specified, monomers must have concentrations indicated by a comma followed by the concentration after the monomer specification.
 Important: An error should be returned if UNITS is present but some monomers lack concentrations, or if UNITS is absent but some monomers have concentrations.
 
 To avoid confusion, monomer names and binding sites should be distinct, and there should be an error otherwise. (Capitalization matters, so it's ok to have a binding site "c" and a monomer named "C", for example.) 
-Monomer names should not have spaces or any of the prohibited symbols ",*|:\\".
+Monomer names should not have spaces or any of the prohibited symbols ">,*|:\\".
 
 ## Monomer repetition:
 The same monomer could occur multiple times in the .tbn file. 

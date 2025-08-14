@@ -145,7 +145,7 @@ class TBNParser:
         """
         Parse a single monomer line.
         
-        Format: [name:] site1 site2 ... [, concentration]
+        Format: [name:] site1 site2 ... [>name] [, concentration]
         
         Args:
             line: Line to parse
@@ -156,20 +156,57 @@ class TBNParser:
             Tuple of (name or None, list of BindingSite objects, concentration or None)
             None if line cannot be parsed
         """
-        # Check for name (indicated by colon)
-        name = None
+        # Check for name (indicated by colon at the beginning)
+        name_prefix = None
         remaining = line
         
         if ':' in line:
             parts = line.split(':', 1)
-            name = parts[0].strip()
+            name_prefix = parts[0].strip()
             remaining = parts[1].strip()
             
             # Validate name doesn't contain special characters or spaces
-            if any(c in name for c in ',*|:\\'):
-                raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain ,*|:\\")
-            if ' ' in name:
-                raise ValueError(f"Line {line_number}: Invalid monomer name '{name}' - cannot contain spaces")
+            if any(c in name_prefix for c in '>,*|:\\'):
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name_prefix}' - cannot contain >,*|:\\")
+            if ' ' in name_prefix:
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name_prefix}' - cannot contain spaces")
+        
+        # Check for name suffix (indicated by > after binding sites) - must be done before concentration check
+        name_suffix = None
+        if '>' in remaining:
+            parts = remaining.split('>', 1)
+            remaining = parts[0].strip()
+            name_and_concentration = parts[1].strip()
+            
+            # First, try to find a valid concentration at the end
+            # A valid concentration is a comma followed by a number
+            concentration_match = None
+            if ',' in name_and_concentration:
+                # Find the last comma and check if what follows is a valid number
+                last_comma_idx = name_and_concentration.rfind(',')
+                potential_concentration = name_and_concentration[last_comma_idx + 1:].strip()
+                try:
+                    float(potential_concentration)
+                    # Valid concentration found
+                    name_suffix = name_and_concentration[:last_comma_idx].strip()
+                    # Re-append the concentration to remaining for later processing
+                    remaining = remaining + ',' + potential_concentration
+                    concentration_match = True
+                except ValueError:
+                    # Not a valid concentration, treat the whole thing as the name
+                    name_suffix = name_and_concentration
+                    concentration_match = False
+            else:
+                name_suffix = name_and_concentration
+            
+            if not name_suffix:
+                raise ValueError(f"Line {line_number}: Empty monomer name after '>'")
+            
+            # Validate name doesn't contain special characters or spaces
+            if any(c in name_suffix for c in '>,*|:\\'):
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name_suffix}' - cannot contain >,*|:\\")
+            if ' ' in name_suffix:
+                raise ValueError(f"Line {line_number}: Invalid monomer name '{name_suffix}' - cannot contain spaces")
         
         # Check for concentration (after comma)
         concentration = None
@@ -185,6 +222,13 @@ class TBNParser:
                 if "Negative concentration" in str(e):
                     raise
                 raise ValueError(f"Line {line_number}: Invalid concentration value '{parts[1].strip()}'")
+        
+        # Check that both naming formats aren't used on the same line
+        if name_prefix is not None and name_suffix is not None:
+            raise ValueError(f"Line {line_number}: Cannot use both 'name:' prefix and '>name' suffix on the same line")
+        
+        # Determine final name
+        name = name_prefix if name_prefix is not None else name_suffix
         
         # Parse binding sites
         site_strings = remaining.split()

@@ -234,6 +234,7 @@ class TestTBNParser:
             ("mon|omer: a b c", "cannot contain \\|"),
             ("mon:omer: a b c", "cannot contain :"),
             ("mon\\omer: a b c", "cannot contain \\\\"),
+            ("mon>omer: a b c", "cannot contain >"),
         ]
         
         for content, expected_msg in test_cases:
@@ -381,6 +382,204 @@ a b c, 100"""
             f.flush()
             
             with pytest.raises(ValueError, match=r"Multiple \\UNITS specifications found"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_monomer_name_suffix_format(self):
+        """Test parsing monomer with >name suffix format."""
+        content = "a b c >monomer1"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert len(monomers) == 1
+        assert monomers[0].name == "monomer1"
+        assert len(monomers[0].binding_sites) == 3
+        assert monomers[0].binding_sites[0] == BindingSite("a", False)
+        assert monomers[0].binding_sites[1] == BindingSite("b", False)
+        assert monomers[0].binding_sites[2] == BindingSite("c", False)
+    
+    def test_monomer_name_suffix_with_concentration(self):
+        """Test parsing monomer with >name suffix and concentration."""
+        content = """\\UNITS: nM
+b a c* >monomer2, 10.5"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert len(monomers) == 1
+        assert monomers[0].name == "monomer2"
+        assert monomers[0].concentration == 10.5
+        assert units == "nM"
+        assert len(monomers[0].binding_sites) == 3
+        assert monomers[0].binding_sites[0] == BindingSite("b", False)
+        assert monomers[0].binding_sites[1] == BindingSite("a", False)
+        assert monomers[0].binding_sites[2] == BindingSite("c", True)
+    
+    def test_monomer_name_suffix_without_concentration(self):
+        """Test parsing monomer with >name suffix without concentration in UNITS file."""
+        content = """\\UNITS: nM
+b2 b1* >C
+a b, 100"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="UNITS specified but monomer lacks concentration"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_mixed_naming_formats(self):
+        """Test parsing file with both naming formats."""
+        content = """\\UNITS: nM
+monomer1: a a* b2 b1, 100
+b a c* >monomer2, 10.5
+b2* b2* b1 b1, 75.5
+regular: x y z, 25"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        assert len(monomers) == 4
+        assert monomers[0].name == "monomer1"
+        assert monomers[0].concentration == 100
+        assert monomers[1].name == "monomer2"
+        assert monomers[1].concentration == 10.5
+        assert monomers[2].name is None
+        assert monomers[2].concentration == 75.5
+        assert monomers[3].name == "regular"
+        assert monomers[3].concentration == 25
+    
+    def test_both_naming_formats_on_same_line_error(self):
+        """Test that using both naming formats on the same line raises an error."""
+        content = "name1: a b c >name2"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Cannot use both 'name:' prefix and '>name' suffix"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_empty_name_after_gt_error(self):
+        """Test that empty name after > raises an error."""
+        content = "a b c >"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Empty monomer name after '>'"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_monomer_name_suffix_with_spaces_error(self):
+        """Test that monomer names with spaces in suffix format raise an error."""
+        content = "a b c >my monomer"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="cannot contain spaces"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_monomer_name_suffix_with_prohibited_chars_error(self):
+        """Test that monomer names with prohibited characters in suffix format raise an error."""
+        test_cases = [
+            ("a b c >mon,omer", "cannot contain ,"),
+            ("a b c >mon*omer", "cannot contain \\*"),
+            ("a b c >mon|omer", "cannot contain \\|"),
+            ("a b c >mon:omer", "cannot contain :"),
+            ("a b c >mon\\omer", "cannot contain \\\\"),
+            ("a b c >mon>omer", "cannot contain >"),
+        ]
+        
+        for content, expected_msg in test_cases:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+                f.write(content)
+                f.flush()
+                
+                with pytest.raises(ValueError, match="cannot contain"):
+                    TBNParser.parse_file(f.name)
+                
+            os.unlink(f.name)
+    
+    def test_monomer_aggregation_with_suffix_names(self):
+        """Test that identical monomers with suffix names aggregate correctly."""
+        content = """\\UNITS: nM
+a b c* >mol1, 100
+c* b a >mol1, 50
+d e* >mol2, 25"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            
+            # Should have 2 monomers (one aggregated, one unique)
+            assert len(monomers) == 2
+            assert units == "nM"
+            
+            # Find the aggregated monomer
+            mol1 = None
+            mol2 = None
+            for m in monomers:
+                if m.name == "mol1":
+                    mol1 = m
+                elif m.name == "mol2":
+                    mol2 = m
+            
+            assert mol1 is not None
+            assert mol2 is not None
+            assert mol1.concentration == 150.0  # 100 + 50
+            assert mol2.concentration == 25.0
+            
+        os.unlink(f.name)
+    
+    def test_monomer_name_conflict_with_suffix_format(self):
+        """Test that monomer name conflicts are detected with suffix format."""
+        # Monomer name conflicts with later binding site
+        content = """
+        a b c >mysite
+        d e mysite
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Binding site 'mysite' conflicts with monomer name"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        # Binding site conflicts with later monomer name (suffix format)
+        content = """
+        a b myname
+        d e f >myname
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Monomer name 'myname' conflicts with binding site"):
                 TBNParser.parse_file(f.name)
             
         os.unlink(f.name)
