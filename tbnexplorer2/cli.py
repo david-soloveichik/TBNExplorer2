@@ -203,7 +203,8 @@ TBN File Format:
             polymat_file,
             compute_free_energies=compute_free_energies,
             compute_concentrations=compute_concentrations,
-            coffee_runner=coffee_runner
+            coffee_runner=coffee_runner,
+            verbose=args.verbose
         )
         
         # Print summary

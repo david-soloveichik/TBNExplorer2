@@ -252,7 +252,8 @@ class PolymerBasisComputer:
         output_file: str,
         compute_free_energies: bool = True,
         compute_concentrations: bool = True,
-        coffee_runner: Optional[COFFEERunner] = None
+        coffee_runner: Optional[COFFEERunner] = None,
+        verbose: bool = False
     ):
         """
         Save polymer basis to .tbnpolymat file format.
@@ -285,6 +286,8 @@ class PolymerBasisComputer:
                 polymer_concentrations = coffee_runner.compute_equilibrium_concentrations(
                     polymers, self.tbn
                 )
+                if verbose:
+                    print("Equilibrium concentrations computed")
                 # Attach concentrations to polymers for sorting
                 for polymer, conc in zip(polymers, polymer_concentrations):
                     polymer._concentration = conc
