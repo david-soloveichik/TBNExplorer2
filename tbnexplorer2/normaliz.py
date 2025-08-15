@@ -5,8 +5,7 @@ from typing import List
 
 import numpy as np
 
-# Default path to Normaliz executable - modify this to match your system
-NORMALIZ_PATH = "/Users/dsolov/Documents/ResearchTools/Normaliz/normaliz"
+from .config import NORMALIZ_PATH
 
 
 class NormalizRunner:

@@ -9,13 +9,11 @@ from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 
+from .config import COFFEE_CLI_PATH
 from .model import TBN
 
 if TYPE_CHECKING:
     from .polymer_basis import Polymer
-
-
-COFFEE_CLI_PATH = "/Users/dsolov/Documents/ResearchTools/coffee/crates/coffee-cli/target/release/coffee-cli"
 
 
 class COFFEERunner:

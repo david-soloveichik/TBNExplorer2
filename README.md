@@ -26,10 +26,10 @@ Given a set of monomers (described by their binding sites) and their initial con
 1. **Python 3.8+** is required
 2. **Normaliz** - Tool for computing Hilbert bases and discrete convex geometry
    - Download from: https://github.com/Normaliz/Normaliz
-   - Default expected path: `/Users/dsolov/Documents/ResearchTools/Normaliz/normaliz`
-   - You can specify a custom path using the `--normaliz-path` option
+   - Configure path via `NORMALIZ_PATH` environment variable or `.env` file
+   - You can also specify a custom path using the `--normaliz-path` option
 3. **COFFEE** - Tool for computing chemical equilibrium concentrations
-   - Expected path: `/Users/dsolov/Documents/ResearchTools/coffee/crates/coffee-cli/target/release/coffee-cli`
+   - Configure path via `COFFEE_CLI_PATH` environment variable or `.env` file
    - Required for equilibrium concentration calculations
 
 ### Install from source
@@ -37,6 +37,10 @@ Given a set of monomers (described by their binding sites) and their initial con
 ```bash
 # Clone or download the repository
 cd TBNExplorer2-CLI
+
+# Copy and configure environment file
+cp .env.example .env
+# Edit .env to set NORMALIZ_PATH and COFFEE_CLI_PATH
 
 # Install in development mode
 pip install -e .
@@ -236,13 +240,14 @@ ruff format .
 
 1. Install Normaliz from https://github.com/Normaliz/Normaliz
 2. Either:
+   - Set `NORMALIZ_PATH` in your `.env` file
    - Use `--normaliz-path` to specify location
-   - Edit `NORMALIZ_PATH` in `tbnexplorer2/normaliz.py`
+   - Export `NORMALIZ_PATH` environment variable
 
 ### "COFFEE not found" Error
 
 1. Build COFFEE from source (see COFFEE documentation)
-2. Update path in `tbnexplorer2/coffee.py`
+2. Set `COFFEE_CLI_PATH` in your `.env` file or environment
 
 ### Star-limiting Restriction Errors
 

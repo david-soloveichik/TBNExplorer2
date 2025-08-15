@@ -71,7 +71,7 @@ Internally, we will represent a polymer as vector of non-negative integers corre
 
 
 # Additional Utilities
-- We want to have Python utility functions for running `Normaliz` to solve Hilbert basis problems and retrieving its output. It is a bit tricky to extract the Hilbert basis from the command line output of Normaliz. Important: please see how `/Users/dsolov/Documents/Development/VibeDevelopment/TBNCanonicalReactionsEnumerator` retrieves the Hilbert basis from the output of Normaliz.
+- We want to have Python utility functions for running `Normaliz` to solve Hilbert basis problems and retrieving its output. It is a bit tricky to extract the Hilbert basis from the command line output of Normaliz.
 The path to Normaliz should be hardcoded in the code, but easily changeable (as a constant on top of the relevant file).
 
 
@@ -109,9 +109,9 @@ We can compute the number of bonds in polymer x as: (Sum[|A|.x] - Sum[A.x])/2, w
 Thus, intuitively, Sum[|A|.x] is the total number of binding sites in x (excluding self-binding within a monomer), and Sum[A.x] is the total excess of unstar binding sites. Subtracting the two gives twice the number of bonds formed (since each bond involves exactly 2 binding sites), so we divide by 2. 
 
 ## 3. Compute equilibrium polymer concentrations
-The big picture is that we want to compute the equilibrium concentrations of all the polymers in the polymer basis. We use the command line tool COFFEE for this, with the executable `/Users/dsolov/Documents/ResearchTools/coffee/crates/coffee-cli/target/release/coffee-cli`.
+The big picture is that we want to compute the equilibrium concentrations of all the polymers in the polymer basis. We use the command line tool COFFEE for this.
 
-Please see `/Users/dsolov/Documents/ResearchTools/coffee/README.md` for COFFEE documentation. Roughly, it takes two input files: CFE and CON. 
+COFFEE takes two input files: CFE and CON. 
 - The CFE file contains the following matrix: Each line corresponds to a polymer in the polymer basis (i.e., counts of monomers in that polymer), followed by the free energy of that polymer. 
 - The CON file contains the concentration of each monomer, one per line. So there should be as many lines as columns in the CFE file minus one (the free energy). The monomer concentrations should be as given in the input .tbn file, _in units of Molar_ (see below).
 Use the `-o <filename>` flag for `coffee-cli` to write its output in `<filename>`. The output file will contain a space-separated list of polymer concentrations _in units of Molar_ (see below), in the same order as in the CFE file. Please note that the concentrations can be in scientific notation like "4.47e-53" or "0.00e0", so you have to parse this properly.
