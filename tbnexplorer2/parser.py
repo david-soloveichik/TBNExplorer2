@@ -303,6 +303,22 @@ class TBNParser:
                 # No duplicates, keep as-is
                 aggregated_monomers.append(monomer_group[0])
             else:
+                # Check for conflicting names among duplicate monomers
+                names = [m.name for m in monomer_group if m.name is not None]
+                unique_names = set(names)
+                
+                if len(unique_names) > 1:
+                    # Multiple different names for the same monomer - error
+                    names_str = ', '.join(f"'{n}'" for n in unique_names)
+                    raise ValueError(
+                        f"Duplicate monomers with different names: {names_str}. "
+                        f"Identical monomers must have the same name or be nameless."
+                    )
+                
+                # Determine the name for the aggregated monomer
+                # If exactly one has a name, use that name
+                aggregated_name = names[0] if names else None
+                
                 # Sum concentrations of identical monomers
                 total_concentration = sum(m.concentration for m in monomer_group)
                 
@@ -313,11 +329,10 @@ class TBNParser:
                         f"identical monomers: {monomer_group[0].get_binding_sites_str()}"
                     )
                 
-                # Create aggregated monomer using the first occurrence's properties
-                # but with summed concentration
+                # Create aggregated monomer with the determined name and summed concentration
                 first_monomer = monomer_group[0]
                 aggregated_monomer = Monomer(
-                    name=first_monomer.name,
+                    name=aggregated_name,
                     binding_sites=first_monomer.binding_sites,
                     concentration=total_concentration,
                     original_line=f"# Aggregated from {len(monomer_group)} identical monomers"

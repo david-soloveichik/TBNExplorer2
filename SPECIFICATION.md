@@ -51,8 +51,11 @@ Important: An error should be returned if UNITS is present but some monomers lac
 
 ## Monomer repetition:
 The same monomer could occur multiple times in the .tbn file. 
+
 - Without `\UNITS`: Treat the two identical monomers independently 
-- With `\UNITS`: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative.
+
+- With `\UNITS`: Have only one entry for the monomer in the matrix A. The monomer's concentration should be the _sum_ of the concentrations of its multiple entries. Important: this includes the possibility of a negative concentration of one of the entries. We should do error checking to make sure all the final concentrations of all monomers is non-negative. 
+If there are duplicate monomers with different names, we should return an error. If one of the duplicate monomers has a name `<name>`, while the other duplicates are nameless, this is ok, and the resulting monomer with the summed concentration should have the name `<name>`.
 
 
 # Polymers 

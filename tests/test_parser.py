@@ -692,6 +692,92 @@ monomer1: a b c*, 50"""
             
         os.unlink(f.name)
     
+    def test_duplicate_monomers_different_names_error(self):
+        """Test that duplicate monomers with different names raise an error."""
+        content = """\\UNITS: nM
+monomer1: a b c*, 100
+monomer2: a b c*, 50"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Duplicate monomers with different names"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+    
+    def test_duplicate_one_named_others_nameless(self):
+        """Test that when one duplicate has a name and others are nameless, the result has that name."""
+        content = """\\UNITS: nM
+a b c*, 100
+monomer1: a b c*, 50
+a b c*, 25"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            
+            # Should have 1 aggregated monomer with the name
+            assert len(monomers) == 1
+            assert monomers[0].name == "monomer1"
+            assert monomers[0].concentration == 175.0  # 100 + 50 + 25
+            
+        os.unlink(f.name)
+    
+    def test_duplicate_monomers_suffix_names(self):
+        """Test duplicate monomer handling with suffix name format."""
+        # Test with same name - should aggregate
+        content = """\\UNITS: nM
+a b c* >mol1, 100
+c* b a >mol1, 50"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            
+            assert len(monomers) == 1
+            assert monomers[0].name == "mol1"
+            assert monomers[0].concentration == 150.0
+            
+        os.unlink(f.name)
+        
+        # Test with different names - should raise error
+        content = """\\UNITS: nM
+a b c* >mol1, 100
+c* b a >mol2, 50"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            with pytest.raises(ValueError, match="Duplicate monomers with different names"):
+                TBNParser.parse_file(f.name)
+            
+        os.unlink(f.name)
+        
+        # Test with one named (suffix) and others nameless
+        content = """\\UNITS: nM
+a b c*, 100
+c* b a >molecule, 50
+b a c*, 25"""
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tbn', delete=False) as f:
+            f.write(content)
+            f.flush()
+            
+            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            
+            assert len(monomers) == 1
+            assert monomers[0].name == "molecule"
+            assert monomers[0].concentration == 175.0
+            
+        os.unlink(f.name)
+    
     def test_different_monomers_dont_aggregate(self):
         """Test that different monomers don't aggregate."""
         content = """\\UNITS: nM
