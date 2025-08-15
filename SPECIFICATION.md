@@ -172,7 +172,7 @@ If multiple constraints are given (multiple lines), they should be treated as an
 
 # Caching polymer basis
 The most computationally intensive part of the pipeline is computing the polymer basis with Normaliz. Other parts, like using COFFEE, are typically much faster.
-Thus if we want to recompute polymer concentrations for new input monomer concentrations without changing what the monomers are, we should avoid re-computing the polymer basis. We do this as follows:
+The polymer basis just depends on what the monomers are, not on their concentrations. Thus if we want to recompute polymer concentrations for new input monomer concentrations without changing what the monomers are, we should avoid re-computing the polymer basis. We do this as follows:
 
 When `tbnexplorer2` is run with an input .tbn file, we create the A matrix and find the corresponding .tbnpolymat file (using the naming rules above) if it exists. If the .tbnpolymat has the keyword: \MATRIX-HASH: <hash>, we compare the hash of A with <hash>. If the hashes match, we can skip recomputing the polymer basis and instead load it from the .tbnpolymat file. Otherwise, we compute the polymer basis as normal and save the new hash. 
 
