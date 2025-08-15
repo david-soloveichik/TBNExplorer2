@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from .coffee import COFFEE_CLI_PATH, COFFEERunner
+from .fourtitwo import FOURTI2_PATH, FourTiTwoRunner
 from .model import TBN
 from .normaliz import NORMALIZ_PATH, NormalizRunner
 from .parser import TBNParser
@@ -55,6 +56,16 @@ TBN File Format:
 
     parser.add_argument(
         "--normaliz-path", default=NORMALIZ_PATH, help=f"Path to Normaliz executable (default: {NORMALIZ_PATH})"
+    )
+
+    parser.add_argument(
+        "--use-4ti2",
+        action="store_true",
+        help="Use 4ti2 instead of Normaliz for Hilbert basis computation",
+    )
+
+    parser.add_argument(
+        "--4ti2-path", default=FOURTI2_PATH, help=f"Path to 4ti2 installation directory (default: {FOURTI2_PATH})"
     )
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
@@ -132,16 +143,28 @@ TBN File Format:
             print("Star-limiting check passed")
             sys.exit(0)
 
-        # Check Normaliz availability
-        normaliz_runner = NormalizRunner(args.normaliz_path)
-
-        if not normaliz_runner.check_normaliz_available():
-            print(f"Error: Normaliz not found at '{args.normaliz_path}'", file=sys.stderr)
-            print("Please install Normaliz or specify the correct path with --normaliz-path", file=sys.stderr)
-            sys.exit(1)
+        # Choose Hilbert basis solver
+        if args.use_4ti2:
+            # Use 4ti2
+            solver_runner = FourTiTwoRunner(getattr(args, "4ti2_path"))
+            if not solver_runner.check_fourtitwo_available():
+                print(f"Error: 4ti2 not found at '{getattr(args, '4ti2_path')}'", file=sys.stderr)
+                print("Please install 4ti2 or specify the correct path with --4ti2-path", file=sys.stderr)
+                sys.exit(1)
+            if args.verbose:
+                print("Using 4ti2 for Hilbert basis computation")
+        else:
+            # Use Normaliz (default)
+            solver_runner = NormalizRunner(args.normaliz_path)
+            if not solver_runner.check_normaliz_available():
+                print(f"Error: Normaliz not found at '{args.normaliz_path}'", file=sys.stderr)
+                print("Please install Normaliz or specify the correct path with --normaliz-path", file=sys.stderr)
+                sys.exit(1)
+            if args.verbose:
+                print("Using Normaliz for Hilbert basis computation")
 
         # Try to load cached polymer basis first
-        computer = PolymerBasisComputer(tbn, normaliz_runner)
+        computer = PolymerBasisComputer(tbn, solver_runner)
         polymers = computer.load_cached_polymer_basis(polymat_file)
 
         if polymers is not None:

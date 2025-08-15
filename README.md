@@ -31,6 +31,10 @@ Given a set of monomers (described by their binding sites) and their initial con
 3. **COFFEE** - Tool for computing chemical equilibrium concentrations
    - Configure path via `COFFEE_CLI_PATH` environment variable or `.env` file
    - Required for equilibrium concentration calculations
+4. **4ti2** (optional) - Alternative tool for computing Hilbert bases
+   - Download from: https://4ti2.github.io/
+   - Configure path via `FOURTI2_PATH` environment variable or `.env` file
+   - Use with `--use-4ti2` flag as an alternative to Normaliz
 
 ### Install from source
 
@@ -61,6 +65,8 @@ tbnexplorer2 input.tbn [options]
 Options:
   -h, --help                        Show help message
   --normaliz-path PATH              Path to Normaliz executable
+  --use-4ti2                        Use 4ti2 instead of Normaliz for Hilbert basis computation
+  --4ti2-path PATH                  Path to 4ti2 installation directory
   --user-friendly-polymer-basis     Generate human-readable polymer basis file
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)

@@ -98,6 +98,9 @@ If given `<example>.tbn` as input, it should create a file called `<example>-pol
 
 The CLI tool should return to the command line the number of polymers in the polymer basis.
 
+### Alternative Hilbert basis calculator
+Let's have an optional argument `--use-4ti2` to use the Hilbert basis solver of the `4ti2` tool instead of Normaliz. (We hope it might be faster in some situations.) The `4ti2` tool is in `/Users/dsolov/Documents/ResearchTools/4ti2`.
+
 ## 2. Compute polymer free energies
 Given the polymers in the polymer basis, we want to compute their "free energies". 
 In general, we want to implement the following: Given a matrix of polymers, with a polymer per row (ie vector of the monomer counts of that polymer), we want to compute the "free energies" of each polymer. 

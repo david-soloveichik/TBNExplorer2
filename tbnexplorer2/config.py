@@ -16,3 +16,4 @@ if env_file.exists():
 # Configuration values
 NORMALIZ_PATH = os.environ.get("NORMALIZ_PATH", "normaliz")
 COFFEE_CLI_PATH = os.environ.get("COFFEE_CLI_PATH", "coffee-cli")
+FOURTI2_PATH = os.environ.get("FOURTI2_PATH", "/Users/dsolov/Documents/ResearchTools/4ti2")
