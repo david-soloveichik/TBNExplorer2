@@ -1,0 +1,31 @@
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "RUF",  # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "N806",  # variable in function should be lowercase
+    "N803",  # argument name should be lowercase
+    "N802",  # function name should be lowercase (for matrix_A property)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tbnexplorer2"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

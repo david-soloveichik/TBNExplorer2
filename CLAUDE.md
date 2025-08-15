@@ -1,6 +1,7 @@
 - Claude should always let the user know if it has any questions prior to proceeding. Claude should interrupt work if questions arise mid-way.
-- Claude should create unit tests and test the code written.
+- Claude should create unit tests and test the code written. Run `ruff` linter.
 - Claude should not read or modify files in ./PLANNING/ or ./my_analyses unless explicitly told to.
 - The desired specification is in SPECIFICATION.md. If told to _implement the updated specification_, Claude should use `git diff SPECIFICATION.md` to see uncommitted changes and implement only those changes. (Ignoring minor formatting changes in SPECIFICATION.md file itself.)
 - Claude should read the entire SPECIFICATION.md file when it would benefit from a big-picture perspective on the project.
 - When git committing, Claude should include SPECIFICATION.md if it was changed by Claude or the user.
+- After making code changes, Claude should run `ruff check .` and `ruff format .` to ensure code quality and consistent formatting.

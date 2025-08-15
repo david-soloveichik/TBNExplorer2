@@ -8,6 +8,7 @@ Filters polymers from .tbnpolymat files based on monomer name criteria.
 import argparse
 import sys
 from pathlib import Path
+
 from .filter import PolymerFilter
 
 
@@ -32,110 +33,93 @@ Examples:
   
   # Show all polymers (no filtering)
   tbnexplorer2-filter example.tbn
-        """
+        """,
     )
-    
+
+    parser.add_argument("tbn_file", help="Input TBN file (corresponding .tbnpolymat file must exist)")
+
     parser.add_argument(
-        'tbn_file',
-        help='Input TBN file (corresponding .tbnpolymat file must exist)'
+        "monomer_names",
+        nargs="*",
+        help="Space-separated list of monomer names to filter by. Only named monomers can be filtered (e.g., B, C, output). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).",
     )
-    
+
     parser.add_argument(
-        'monomer_names',
-        nargs='*',
-        help='Space-separated list of monomer names to filter by. Only named monomers can be filtered (e.g., B, C, output). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).'
+        "--num", "-n", type=int, default=100, metavar="N", help="Maximum number of polymers to output (default: 100)"
     )
-    
+
     parser.add_argument(
-        '--num', '-n',
-        type=int,
-        default=100,
-        metavar='N',
-        help='Maximum number of polymers to output (default: 100)'
-    )
-    
-    parser.add_argument(
-        '--percent-limit', '-p',
+        "--percent-limit",
+        "-p",
         type=float,
-        metavar='P',
-        help='Only show polymers with concentration > P%% of total concentration'
+        metavar="P",
+        help="Only show polymers with concentration > P%% of total concentration",
     )
-    
+
     parser.add_argument(
-        '--constraints-file',
+        "--constraints-file",
         type=str,
-        metavar='FILE',
-        help='File containing advanced filtering constraints (CONTAINS or EXACTLY)'
+        metavar="FILE",
+        help="File containing advanced filtering constraints (CONTAINS or EXACTLY)",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Validate input file
     if not Path(args.tbn_file).exists():
         print(f"Error: Input file '{args.tbn_file}' not found", file=sys.stderr)
         sys.exit(1)
-    
+
     # Validate constraints file compatibility
     if args.constraints_file and args.monomer_names:
-        print(f"Error: Cannot specify monomer names on command line when using --constraints-file", file=sys.stderr)
+        print("Error: Cannot specify monomer names on command line when using --constraints-file", file=sys.stderr)
         sys.exit(1)
-    
+
     # Validate constraints file exists if provided
     if args.constraints_file and not Path(args.constraints_file).exists():
         print(f"Error: Constraints file '{args.constraints_file}' not found", file=sys.stderr)
         sys.exit(1)
-    
+
     # Validate percent limit if provided
-    if args.percent_limit is not None:
-        if args.percent_limit < 0 or args.percent_limit > 100:
-            print(f"Error: --percent-limit must be between 0 and 100", file=sys.stderr)
-            sys.exit(1)
-    
+    if args.percent_limit is not None and (args.percent_limit < 0 or args.percent_limit > 100):
+        print("Error: --percent-limit must be between 0 and 100", file=sys.stderr)
+        sys.exit(1)
+
     # Validate num parameter
     if args.num < 1:
-        print(f"Error: --num must be at least 1", file=sys.stderr)
+        print("Error: --num must be at least 1", file=sys.stderr)
         sys.exit(1)
-    
+
     try:
         # Create filter and load data
         polymer_filter = PolymerFilter(args.tbn_file)
-        
+
         # Filter polymers
         if args.constraints_file:
             # Use constraints file filtering
             filtered_polymers = polymer_filter.filter_by_constraints_file(
-                args.constraints_file,
-                percent_limit=args.percent_limit,
-                max_count=args.num
+                args.constraints_file, percent_limit=args.percent_limit, max_count=args.num
             )
             constraints_description = f"constraints from {Path(args.constraints_file).name}"
         else:
             # Use regular monomer name filtering
             filtered_polymers = polymer_filter.filter_by_monomers(
-                args.monomer_names,
-                percent_limit=args.percent_limit,
-                max_count=args.num
+                args.monomer_names, percent_limit=args.percent_limit, max_count=args.num
             )
             constraints_description = None
-        
+
         # Format and output results
         if args.constraints_file:
             output = polymer_filter.format_output_with_constraints(
-                filtered_polymers,
-                constraints_description,
-                percent_limit=args.percent_limit,
-                max_count=args.num
+                filtered_polymers, constraints_description, percent_limit=args.percent_limit, max_count=args.num
             )
         else:
             output = polymer_filter.format_output(
-                filtered_polymers,
-                args.monomer_names,
-                percent_limit=args.percent_limit,
-                max_count=args.num
+                filtered_polymers, args.monomer_names, percent_limit=args.percent_limit, max_count=args.num
             )
-        
+
         print(output)
-        
+
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -145,6 +129,7 @@ Examples:
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

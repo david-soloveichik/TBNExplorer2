@@ -1,5 +1,4 @@
-from setuptools import setup, find_packages
-import os
+from setuptools import find_packages, setup
 
 setup(
     name="tbnexplorer2",
@@ -17,6 +16,6 @@ setup(
     python_requires=">=3.8",
     author="TBN Explorer Team",
     description="A Python library and CLI tool for thermodynamics of binding networks (TBN) analysis",
-    long_description=open("README.md").read() if os.path.exists("README.md") else "",
+    long_description="""A Python library and CLI tool for thermodynamics of binding networks (TBN) analysis""",
     long_description_content_type="text/markdown",
 )
