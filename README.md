@@ -1,16 +1,36 @@
 # TBN Explorer 2
 
-A Python library and command-line tool for analyzing Thermodynamics of Binding Networks (TBN) models. This tool computes polymer bases (Hilbert bases) for TBN systems, which represent the fundamental "unsplittable" polymers in the network.
+A Python library and command-line tools for analyzing Thermodynamics of Binding Networks (TBN) models.
+
+## Overview
+
+The TBN (Thermodynamics of Binding Networks) model is a framework for studying abstract chemical systems at equilibrium. In this model:
+
+- **Binding sites** (domains) are the fundamental units that can bind to complementary partners
+- **Monomers** are collections (multisets) of binding sites  
+- **Polymers** (complexes) are collections of monomers that bind together through complementary binding sites
+
+The system must be star limiting and enthalpy is assumed to be infinite.
+
+Given a set of monomers (described by their binding sites) and their initial concentrations, TBN Explorer computes:
+1. The **polymer basis** - the set of fundamental "unsplittable" polymers
+2. The **free energies** of each polymer equal to the number of bonds
+3. The **equilibrium concentrations** of all polymers in the system
+
+
 
 ## Installation
 
 ### Prerequisites
 
 1. **Python 3.8+** is required
-2. **Normaliz** - A tool for discrete convex geometry computations
+2. **Normaliz** - Tool for computing Hilbert bases and discrete convex geometry
    - Download from: https://github.com/Normaliz/Normaliz
    - Default expected path: `/Users/dsolov/Documents/ResearchTools/Normaliz/normaliz`
    - You can specify a custom path using the `--normaliz-path` option
+3. **COFFEE** - Tool for computing chemical equilibrium concentrations
+   - Expected path: `/Users/dsolov/Documents/ResearchTools/coffee/crates/coffee-cli/target/release/coffee-cli`
+   - Required for equilibrium concentration calculations
 
 ### Install from source
 
@@ -25,129 +45,131 @@ pip install -e .
 pip install .
 ```
 
-### Install dependencies only
+## Command-Line Tools
 
-```bash
-pip install -r requirements.txt
-```
+### tbnexplorer2 - Main Analysis Tool
 
-## Usage
-
-### Basic Command
-
-```bash
-tbnexplorer2 input.tbn
-```
-
-This will:
-1. Parse the TBN file
-2. Check the star-limiting restriction
-3. Compute the polymer basis using Normaliz
-4. Save results to `input-polymer-basis.txt`
-
-### Command-Line Options
+Computes polymer bases, free energies, and equilibrium concentrations.
 
 ```bash
 tbnexplorer2 input.tbn [options]
 
 Options:
-  -h, --help            Show help message
-  -o, --output FILE     Specify output file (default: [input]-polymer-basis.txt)
-  --normaliz-path PATH  Path to Normaliz executable
-  -v, --verbose         Enable verbose output
-  --check-only          Only check star-limiting restriction, don't compute basis
+  -h, --help                        Show help message
+  --normaliz-path PATH              Path to Normaliz executable
+  --user-friendly-polymer-basis     Generate human-readable polymer basis file
+  --no-concentrations               Skip concentration calculations
+  --no-free-energies                Skip free energy calculations (also skips concentrations)
+  -v, --verbose                     Enable verbose output
 ```
 
-### Examples
+**Outputs:**
+- `input.tbnpolymat` - Matrix file with polymer compositions, free energies, and concentrations
+- `input-polymer-basis.txt` - Human-readable polymer basis (with `--user-friendly-polymer-basis`)
+
+### tbnexplorer2-filter - Polymer Filtering Tool
+
+Filters and displays polymers containing specific monomers.
 
 ```bash
-# Basic usage
-tbnexplorer2 examples/balanced.tbn
+tbnexplorer2-filter input.tbn [monomer1] [monomer2] ... [options]
 
-# Specify custom output file
-tbnexplorer2 examples/balanced.tbn --output results.txt
-
-# Verbose mode to see detailed progress
-tbnexplorer2 examples/balanced.tbn --verbose
-
-# Only check if TBN satisfies star-limiting restriction
-tbnexplorer2 examples/balanced.tbn --check-only
-
-# Use custom Normaliz installation
-tbnexplorer2 examples/balanced.tbn --normaliz-path /usr/local/bin/normaliz
+Options:
+  -n, --num N                Maximum number of polymers to output (default: 100)
+  -p, --percent-limit P      Only show polymers above P% of total concentration
+  --constraints-file FILE    Advanced filtering with constraint specifications
 ```
 
-## TBN File Format
+**Constraint File Format:**
+```
+CONTAINS monomer1 monomer2    # Polymers containing these monomers
+EXACTLY monomer1 monomer2     # Polymers with exactly these monomers
+```
 
-TBN files (`.tbn`) describe monomers and their binding sites. Here's the format:
+## TBN File Format (.tbn)
+
+TBN files describe monomers as collections of binding sites with optional concentrations.
 
 ### Basic Syntax
 
 ```
 # Comments start with #
-monomer_name: site1 site2 site3   # Named monomer
-site1 site2 site3                  # Unnamed monomer
-site1 site2 site3, 100.5          # Monomer with concentration
+\UNITS: nM                         # Concentration units (nM, pM, uM, mM, M)
+
+monomer_name: site1 site2 site3, 100   # Named monomer with concentration
+site1 site2* >another_name, 50         # Alternative naming syntax
+site1 site2 site3                      # Unnamed monomer (no concentration without UNITS)
 ```
 
 ### Binding Sites
 
 - **Unstar sites**: Regular binding sites (e.g., `a`, `b1`, `xyz`)
-- **Star sites**: Complementary binding sites ending with `*` (e.g., `a*`, `b1*`, `xyz*`)
-- Star and unstar sites with the same base name can bind together
+- **Star sites**: Complementary sites ending with `*` (e.g., `a*`, `b1*`)
+- Complementary pairs (`a` and `a*`) can bind together
+- Prohibited characters in names: `,`, `>`, `*`, `|`, `:`, `\`
 
-### Rules
+### Key Rules
 
-1. **Consistency**: Either ALL monomers have concentrations or NONE do
-2. **Star-limiting**: For each binding site type, total unstar ≥ total star
-3. **No special characters**: Binding sites cannot contain `,`, `*`, `|`, or `:`
+1. **Units Consistency**: With `\UNITS` keyword, ALL monomers must have concentrations. Without it, NO monomers can have concentrations.
+2. **Star-limiting Restriction**: For each binding site type, total unstar count ≥ total star count across all monomers
+3. **Duplicate Monomers**: 
+   - Without UNITS: Treated independently
+   - With UNITS: Concentrations are summed (must have same name or one named)
 
 ### Example TBN Files
 
-**Simple balanced TBN:**
+**Simple system without concentrations:**
 ```
-# balanced.tbn - Each binding site has equal star/unstar
+# Simple binding network
 A: a b c
 B: a* b* c*
-C: d d e
-D: d* d* e*
+dimer: d d e
+complement: d* d* e*
 ```
 
-**TBN with concentrations:**
+**System with concentrations:**
 ```
-# with_concentrations.tbn
-MA: a b, 100
-MB: a* b*, 50
-MC: c d, 75
-MD: c* d*, 60
+\UNITS: nM
+initiator: a b, 100
+propagator: a* b c, 50
+terminator: c* d, 75
+cap: d*, 25.5
 ```
 
-## Output Format
+## Output Formats
 
-The polymer basis is saved in a human-readable format:
+### .tbnpolymat File
 
+Matrix format with polymers sorted by concentration:
 ```
-# Polymer basis - N polymers
-#
+# Header with metadata
+\MATRIX-HASH: [hash]
+\UNITS: nM
+# Columns: [monomer multiplicities] [free energy] [concentration]
+1 0 2 0 -3 45.2
+0 1 1 1 -2 12.8
+...
+```
+
+### User-Friendly Polymer Basis
+
+Human-readable format showing polymer composition:
+```
 # Polymer 1
 2 | monomer_name
 1 | a b c
 
 # Polymer 2
-1 | monomer_name
-...
+1 | initiator
+3 | propagator
 ```
-
-Each line shows:
-- Count (`n |`) - multiplicity of the monomer in the polymer
-- Monomer representation - either its name or binding sites
 
 ## Python API
 
-You can also use TBN Explorer as a Python library:
+Use TBN Explorer as a Python library:
 
 ```python
-from tbnexplorer2 import TBNParser, TBN, PolymerBasisComputer
+from tbnexplorer2 import TBNParser, TBN, PolymerBasisComputer, FreeEnergyCalculator
 
 # Parse TBN file
 monomers, binding_sites = TBNParser.parse_file("input.tbn")
@@ -163,56 +185,98 @@ if not is_valid:
 
 # Compute polymer basis
 computer = PolymerBasisComputer(tbn)
-polymers = computer.compute_polymer_basis()
+polymer_basis = computer.compute_polymer_basis()
 
-# Save results
-computer.save_polymer_basis(polymers, "output.txt")
-print(f"Found {len(polymers)} polymers in basis")
+# Calculate free energies
+calc = FreeEnergyCalculator(tbn)
+free_energies = calc.compute_free_energies(polymer_basis)
+
+# Compute equilibrium concentrations (requires COFFEE)
+if tbn.has_concentrations:
+    concentrations = computer.compute_equilibrium_concentrations(
+        polymer_basis, free_energies, tbn.monomer_concentrations
+    )
 ```
+
+## Performance Considerations
+
+### Caching
+
+The polymer basis computation (most expensive operation) is cached based on the monomer matrix hash. When re-running with different concentrations but same monomers, the cached basis is reused automatically.
+
+### Large Systems
+
+TBN Explorer is designed to handle:
+- Polymer bases with hundreds of thousands of polymers
+- Efficient matrix operations using NumPy
+- Streaming I/O for large output files
 
 ## Testing
 
 Run the test suite:
 
 ```bash
-# Install pytest if needed
-pip install pytest
-
 # Run all tests
 pytest tests/
 
 # Run with verbose output
 pytest tests/ -v
 
-# Run specific test file
-pytest tests/test_parser.py
+# Run specific test
+pytest tests/test_parser.py::TestTBNParser::test_units_parsing
+
+# Check code quality
+ruff check .
+ruff format .
 ```
 
 ## Troubleshooting
 
 ### "Normaliz not found" Error
 
-If you get an error about Normaliz not being found:
-
 1. Install Normaliz from https://github.com/Normaliz/Normaliz
 2. Either:
-   - Use `--normaliz-path` to specify the location
+   - Use `--normaliz-path` to specify location
    - Edit `NORMALIZ_PATH` in `tbnexplorer2/normaliz.py`
+
+### "COFFEE not found" Error
+
+1. Build COFFEE from source (see COFFEE documentation)
+2. Update path in `tbnexplorer2/coffee.py`
 
 ### Star-limiting Restriction Errors
 
-If your TBN fails the star-limiting check:
-- Ensure for each binding site type, you have at least as many unstar as star sites
-- Use `--verbose` to see which binding sites are problematic
-- Adjust concentrations if using them
+- Ensure for each binding site: unstar count ≥ star count
+- Use `--verbose` to identify problematic sites
+- Check concentration values if using UNITS
 
-### Installation Issues
+### Missing Concentrations
 
-If `pip install -e .` fails:
-- Make sure you have Python 3.8 or newer
-- Try `python -m pip install --upgrade pip` first
-- Install numpy manually: `pip install numpy`
+- With `\UNITS`: ALL monomers need concentrations
+- Without `\UNITS`: NO monomers should have concentrations
+- Use `--no-concentrations` to skip equilibrium calculations
+
 
 ## License
 
-This project is part of the TBN research toolkit for analyzing thermodynamics of binding networks.
+MIT License
+
+Copyright (c) 2024 TBN Explorer Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
