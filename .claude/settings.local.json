@@ -11,7 +11,8 @@
       "Bash(python:*)",
       "Bash(cat:*)",
       "Bash(ruff check:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ruff format:*)"
     ],
     "deny": [],
     "ask": [],

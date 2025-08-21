@@ -88,7 +88,7 @@ Now we want to find the Hilbert basis of the cone corresponding to solutions of 
 Important: The Hilbert basis H may be very large! There could be hundreds of thousands of vectors in H. Thus these operations need to be very efficient. 
 
 We optionally save the polymer basis into a user-friendly text file. If the command line option `--user-friendly-polymer-basis` is given to out CLI tool `tbnexplorer2`, it should do the following: 
-If given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.txt`. This file should represent the polymers in the polymer basis in the following user-friendly way:
+Assuming we are given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.txt`. This file should represent the polymers in the polymer basis in the following user-friendly way:
 - There should be an empty line between polymers
 - Each polymer p is represented by its monomers, one per line
     - The line should start with "n | " where n is the multiplicity of the monomer in p
