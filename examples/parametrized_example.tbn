@@ -1,0 +1,43 @@
+# Parametrized TBN Example File
+# =============================
+# Use {{variable_name}} syntax to define template variables for concentrations.
+# These variables will be replaced with actual values at runtime.
+#
+# HOW TO RUN:
+# -----------
+# Basic usage with parameter assignments:
+#   tbnexplorer2 examples/parametrized_example.tbn --parametrized a_conc=100 b_conc=50.5 c_conc=25
+#
+#
+# After running tbnexplorer2, the parameters are stored in the .tbnpolymat file
+# with a \PARAMETERS: section. This allows tbnexplorer2-filter to automatically
+# use the same parameters without needing to specify them again:
+#
+
+\UNITS: nM
+
+# Example system: A three-component binding network
+# Component A can bind to both B and C
+# Component B can bind to A and itself
+# Component C can bind to A
+
+# Component A with parametrized concentration
+# This monomer has binding sites that can interact with B and C
+ComponentA: a_to_b a_to_c site1, {{a_conc}}
+
+# Component B with parametrized concentration  
+# Can form homodimers through b_self binding sites
+ComponentB: b_to_a b_self b_self* site2, {{b_conc}}
+
+# Component C with parametrized concentration
+ComponentC: c_to_a site3 site3*, {{c_conc}}
+
+# Complementary binding partners (using literal concentrations)
+# These could represent fixed regulatory elements
+a_to_b* b_to_a*, 10  # Mediator for A-B binding
+a_to_c* c_to_a*, 10  # Mediator for A-C binding
+
+# Additional monomers with mixed parametrized and literal concentrations
+# This shows you can combine both approaches in the same file
+Regulator1: site1* site2*, {{a_conc}}  # Uses same concentration as ComponentA
+Regulator2: site3 site1, 5.5           # Fixed concentration
