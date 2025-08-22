@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Optional, Tuple
 
 from .model import BindingSite, Monomer
@@ -7,19 +8,28 @@ class TBNParser:
     """Parser for TBN (Thermodynamics of Binding Networks) input files."""
 
     @staticmethod
-    def parse_file(filepath: str) -> Tuple[List[Monomer], Dict[str, int], Optional[str]]:
+    def parse_file(
+        filepath: str, variables: Optional[Dict[str, float]] = None
+    ) -> Tuple[List[Monomer], Dict[str, int], Optional[str], Dict[str, float]]:
         """
         Parse a TBN file and extract monomers with their concentrations.
 
         Args:
             filepath: Path to the TBN file
+            variables: Optional dictionary of variable assignments for parametrized .tbn files
 
         Returns:
-            Tuple of (list of Monomer objects, dict of binding site to index, concentration units or None)
+            Tuple of (list of Monomer objects, dict of binding site to index, concentration units or None,
+                     dict of actually used variables)
 
         Raises:
             ValueError: If file format is invalid or \\UNITS/concentration specifications are inconsistent
         """
+        if variables is None:
+            variables = {}
+
+        # Track which variables were actually used
+        used_variables = {}
         # First pass: scan for UNITS keyword
         units = None
         with open(filepath) as f:
@@ -76,7 +86,7 @@ class TBNParser:
                     continue
 
                 # Parse the line
-                monomer_data = TBNParser._parse_monomer_line(line, line_number, units)
+                monomer_data = TBNParser._parse_monomer_line(line, line_number, units, variables, used_variables)
                 if monomer_data:
                     name, binding_sites, concentration = monomer_data
 
@@ -136,11 +146,15 @@ class TBNParser:
         if units is not None:
             monomers = TBNParser._aggregate_identical_monomers(monomers, binding_site_index)
 
-        return monomers, binding_site_index, units
+        return monomers, binding_site_index, units, used_variables
 
     @staticmethod
     def _parse_monomer_line(
-        line: str, line_number: int, units: Optional[str] = None
+        line: str,
+        line_number: int,
+        units: Optional[str] = None,
+        variables: Optional[Dict[str, float]] = None,
+        used_variables: Optional[Dict[str, float]] = None,
     ) -> Optional[Tuple[Optional[str], List[BindingSite], Optional[float]]]:
         """
         Parse a single monomer line.
@@ -151,11 +165,17 @@ class TBNParser:
             line: Line to parse
             line_number: Line number for error reporting
             units: Units specification (allows negative concentrations if present)
+            variables: Dictionary of variable assignments for parametrized .tbn files
+            used_variables: Dictionary to track which variables were actually used
 
         Returns:
             Tuple of (name or None, list of BindingSite objects, concentration or None)
             None if line cannot be parsed
         """
+        if variables is None:
+            variables = {}
+        if used_variables is None:
+            used_variables = {}
         # Check for name (indicated by colon at the beginning)
         name_prefix = None
         remaining = line
@@ -210,15 +230,29 @@ class TBNParser:
         if "," in remaining:
             parts = remaining.rsplit(",", 1)
             remaining = parts[0].strip()
-            try:
-                concentration = float(parts[1].strip())
-                # Only disallow negative concentrations when \UNITS is not present
-                if concentration < 0 and units is None:
-                    raise ValueError(f"Line {line_number}: Negative concentration not allowed")
-            except ValueError as e:
-                if "Negative concentration" in str(e):
-                    raise
-                raise ValueError(f"Line {line_number}: Invalid concentration value '{parts[1].strip()}'") from e
+            conc_str = parts[1].strip()
+
+            # Check for template syntax {{var}}
+            template_match = re.match(r"^{{\s*(\w+)\s*}}$", conc_str)
+            if template_match:
+                var_name = template_match.group(1)
+                if var_name not in variables:
+                    raise ValueError(
+                        f"Line {line_number}: Template variable '{var_name}' not provided. "
+                        f"Use --parametrized {var_name}=VALUE to specify its value."
+                    )
+                concentration = variables[var_name]
+                used_variables[var_name] = concentration
+            else:
+                try:
+                    concentration = float(conc_str)
+                    # Only disallow negative concentrations when \UNITS is not present
+                    if concentration < 0 and units is None:
+                        raise ValueError(f"Line {line_number}: Negative concentration not allowed")
+                except ValueError as e:
+                    if "Negative concentration" in str(e):
+                        raise
+                    raise ValueError(f"Line {line_number}: Invalid concentration value '{conc_str}'") from e
 
         # Check that both naming formats aren't used on the same line
         if name_prefix is not None and name_suffix is not None:

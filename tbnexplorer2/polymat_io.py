@@ -28,6 +28,7 @@ class PolymatData:
         concentration_units: Units for concentration values (e.g., 'nM', 'uM')
         has_free_energies: Whether free energies are included
         has_concentrations: Whether concentrations are included
+        parameters: Optional dictionary of parameters used for parametrized .tbn files
     """
 
     polymers: List[np.ndarray]
@@ -39,6 +40,7 @@ class PolymatData:
     concentration_units: Optional[str] = None
     has_free_energies: bool = False
     has_concentrations: bool = False
+    parameters: Optional[dict] = None
 
     def get_polymer_data(self, index: int) -> Tuple[np.ndarray, Optional[float], Optional[float]]:
         """
@@ -132,6 +134,7 @@ class PolymatReader:
             concentration_units=header_info.get("concentration_units"),
             has_free_energies=header_info["has_free_energies"],
             has_concentrations=header_info["has_concentrations"],
+            parameters=header_info.get("parameters"),
         )
 
     def read_header_only(self) -> dict:
@@ -178,6 +181,7 @@ class PolymatReader:
             "concentration_units": None,
             "has_free_energies": False,
             "has_concentrations": False,
+            "parameters": None,
         }
 
         with open(self.file_path) as f:
@@ -201,6 +205,20 @@ class PolymatReader:
                     if hash_line.startswith("#"):
                         hash_line = hash_line[1:].strip()
                     header_info["matrix_hash"] = hash_line.split(":", 1)[1].strip()
+                elif "\\PARAMETERS:" in line:
+                    # Extract parameters dictionary
+                    params_line = line
+                    if params_line.startswith("#"):
+                        params_line = params_line[1:].strip()
+                    params_str = params_line.split(":", 1)[1].strip()
+                    # Parse parameters string (format: "var1=val1 var2=val2")
+                    if params_str:
+                        header_info["parameters"] = {}
+                        for assignment in params_str.split():
+                            if "=" in assignment:
+                                var_name, var_value = assignment.split("=", 1)
+                                with contextlib.suppress(ValueError):
+                                    header_info["parameters"][var_name] = float(var_value)
                 elif "Concentration units:" in line:
                     header_info["concentration_units"] = line.split(":", 1)[1].strip()
                 elif "Columns:" in line:
@@ -345,6 +363,11 @@ class PolymatWriter:
 
         if data.matrix_hash:
             f.write(f"\\MATRIX-HASH: {data.matrix_hash}\n")
+
+        if data.parameters:
+            # Write parameters in sorted order for consistency
+            params_str = " ".join(f"{k}={v}" for k, v in sorted(data.parameters.items()))
+            f.write(f"\\PARAMETERS: {params_str}\n")
 
         if data.concentration_units:
             f.write(f"# Concentration units: {data.concentration_units}\n")

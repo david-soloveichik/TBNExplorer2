@@ -67,8 +67,16 @@ class PolymerFilter:
         self.tbn_file = Path(tbn_file)
         self.polymat_file = self._infer_polymat_file()
 
+        # Load polymer data from .tbnpolymat file first to get parameters
+        self.polymer_data = self._load_polymat_file()
+
+        # Use parameters from .tbnpolymat if available
+        variables = self.polymer_data.parameters if self.polymer_data.parameters else {}
+
         # Parse TBN file to get monomer information
-        self.monomers, self.binding_site_index, self.units = TBNParser.parse_file(str(self.tbn_file))
+        self.monomers, self.binding_site_index, self.units, _ = TBNParser.parse_file(
+            str(self.tbn_file), variables=variables
+        )
 
         # Validate that UNITS keyword exists (required for tbnexplorer2-filter)
         if self.units is None:
@@ -76,9 +84,6 @@ class PolymerFilter:
                 f"tbnexplorer2-filter requires a .tbn file with UNITS keyword and concentrations. "
                 f"File '{self.tbn_file}' does not have UNITS specified."
             )
-
-        # Load polymer data from .tbnpolymat file
-        self.polymer_data = self._load_polymat_file()
 
     def _infer_polymat_file(self) -> Path:
         """

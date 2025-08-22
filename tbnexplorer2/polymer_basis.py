@@ -253,6 +253,7 @@ class PolymerBasisComputer:
         compute_concentrations: bool = True,
         coffee_runner: Optional[COFFEERunner] = None,
         verbose: bool = False,
+        parameters: Optional[dict] = None,
     ):
         """
         Save polymer basis to .tbnpolymat file format.
@@ -266,6 +267,8 @@ class PolymerBasisComputer:
             compute_free_energies: Whether to compute and include free energies
             compute_concentrations: Whether to compute and include concentrations
             coffee_runner: Optional COFFEERunner instance for concentration computation
+            verbose: Whether to enable verbose output
+            parameters: Optional dictionary of parameters used for parametrized .tbn files
         """
         # Determine what to compute
         has_monomer_concentrations = self.tbn.concentrations is not None
@@ -321,6 +324,7 @@ class PolymerBasisComputer:
             concentration_units=get_unit_display_name(self.tbn.concentration_units) if include_concentrations else None,
             has_free_energies=include_free_energies,
             has_concentrations=include_concentrations,
+            parameters=parameters,
         )
 
         # Write using PolymatWriter

@@ -96,6 +96,13 @@ TBN File Format:
         help="Save user-friendly polymer basis to [input]-polymer-basis.txt file",
     )
 
+    parser.add_argument(
+        "--parametrized",
+        nargs="*",
+        metavar="VAR=VALUE",
+        help="Variable assignments for parametrized .tbn files (e.g., a=20 b=100.4)",
+    )
+
     args = parser.parse_args()
 
     # Validate input file
@@ -112,12 +119,33 @@ TBN File Format:
     # Always generate .tbnpolymat file
     polymat_file = str(input_path.parent / f"{base_name}.tbnpolymat")
 
+    # Parse parametrized arguments if provided
+    variables = {}
+    if args.parametrized:
+        for assignment in args.parametrized:
+            if "=" not in assignment:
+                print(
+                    f"Error: Invalid parameter assignment '{assignment}'. Expected format: VAR=VALUE", file=sys.stderr
+                )
+                sys.exit(1)
+            var_name, var_value = assignment.split("=", 1)
+            var_name = var_name.strip()
+            try:
+                variables[var_name] = float(var_value.strip())
+            except ValueError:
+                print(f"Error: Invalid numeric value '{var_value}' for parameter '{var_name}'", file=sys.stderr)
+                sys.exit(1)
+
     try:
         # Parse TBN file
         if args.verbose:
             print(f"Parsing TBN file: {args.input_file}")
+            if variables:
+                print(f"Using parameters: {variables}")
 
-        monomers, binding_site_index, concentration_units = TBNParser.parse_file(args.input_file)
+        monomers, binding_site_index, concentration_units, used_variables = TBNParser.parse_file(
+            args.input_file, variables=variables
+        )
 
         if args.verbose:
             print(f"Found {len(monomers)} monomers")
@@ -209,6 +237,7 @@ TBN File Format:
             compute_concentrations=compute_concentrations,
             coffee_runner=coffee_runner,
             verbose=args.verbose,
+            parameters=used_variables,
         )
 
         # Print summary

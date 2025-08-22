@@ -180,3 +180,27 @@ The polymer basis just depends on what the monomers are, not on their concentrat
 When `tbnexplorer2` is run with an input .tbn file, we create the A matrix and find the corresponding .tbnpolymat file (using the naming rules above) if it exists. If the .tbnpolymat has the keyword: \MATRIX-HASH: <hash>, we compare the hash of A with <hash>. If the hashes match, we can skip recomputing the polymer basis and instead load it from the .tbnpolymat file. Otherwise, we compute the polymer basis as normal and save the new hash. 
 
 The keyword `\MATRIX-HASH: <hash>` should be somewhere close to the top of the .tbnpolymat file (without a comment marker prefix). The standard output of `tbnexplorer2` should indicate whether it had to re-generate the polymer basis or not (hashes matched).
+
+
+# Advanced TBN specification using parametrized syntax (template syntax) for concentrations
+The framework includes functionality for parsing .tbn files that include a parametrized specification for monomer concentrations.
+
+## Command-line usage
+To parse templated .tbn files, `tbnexplorer2` is passed an optional `--parametrized` argument followed by a list of numerical variable assignments such as `conc1=90.3 conc2=50`. 
+
+## Template syntax
+In the .tbn file, template variables are specified using double curly braces: `{{var}}`. These placeholders are replaced with the corresponding values provided via the command line during parsing.
+
+Example .tbn file:
+```
+\UNITS: nM
+monomer1: a b*, {{conc1}}
+monomer2: c d, {{conc2}}
+monomer3: e f, 75.5  # Can mix templates with literal values
+```
+
+## Parameter storage in .tbnpolymat
+When a parametrized .tbn file is processed, the used parameter values are stored in the generated .tbnpolymat file using the `\PARAMETERS:` keyword in the header section. For example: `\PARAMETERS: conc1=90.3 conc2=50.0`
+
+## Compatibility with tbnexplorer2-filter
+The `tbnexplorer2-filter` command automatically reads parameters from the .tbnpolymat file when present. This ensures that filtering operations work correctly with parametrized .tbn files without requiring the user to re-specify the parameter values.
