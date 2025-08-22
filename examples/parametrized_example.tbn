@@ -16,26 +16,13 @@
 
 \UNITS: nM
 
-# Example system: A three-component binding network
-# Component A can bind to both B and C
-# Component B can bind to A and itself
-# Component C can bind to A
-
-# Component A with parametrized concentration
-# This monomer has binding sites that can interact with B and C
 ComponentA: a_to_b a_to_c site1, {{a_conc}}
-
-# Component B with parametrized concentration  
-# Can form homodimers through b_self binding sites
 ComponentB: b_to_a b_self b_self* site2, {{b_conc}}
-
-# Component C with parametrized concentration
 ComponentC: c_to_a site3 site3*, {{c_conc}}
 
 # Complementary binding partners (using literal concentrations)
-# These could represent fixed regulatory elements
-a_to_b* b_to_a*, 10  # Mediator for A-B binding
-a_to_c* c_to_a*, 10  # Mediator for A-C binding
+a_to_b* b_to_a*, 10
+a_to_c* c_to_a*, 10
 
 # Additional monomers with mixed parametrized and literal concentrations
 # This shows you can combine both approaches in the same file
