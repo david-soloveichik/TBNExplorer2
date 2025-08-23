@@ -234,4 +234,9 @@ $RECYCLE.BIN/
 test_output/
 test_results/
 
+# Claude settings
+.clauderc
+.claude/
+CLAUDE.md
+
 my_analyses/
