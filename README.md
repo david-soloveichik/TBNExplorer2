@@ -24,14 +24,17 @@ Given a set of monomers (described by their binding sites) and their initial con
 ### Prerequisites
 
 1. **Python 3.8+** is required
-2. **Normaliz** - Tool for computing Hilbert bases and discrete convex geometry
+2. **Python dependencies** - Automatically installed with pip:
+   - numpy, scipy - Numerical computations
+   - simpleeval - Safe expression evaluation for parametrized .tbn files
+3. **Normaliz** - Tool for computing Hilbert bases and discrete convex geometry
    - Download from: https://github.com/Normaliz/Normaliz
    - Configure path via `NORMALIZ_PATH` environment variable or `.env` file
    - You can also specify a custom path using the `--normaliz-path` option
-3. **COFFEE** - Tool for computing chemical equilibrium concentrations
+4. **COFFEE** - Tool for computing chemical equilibrium concentrations
    - Configure path via `COFFEE_CLI_PATH` environment variable or `.env` file
    - Required for equilibrium concentration calculations
-4. **4ti2** (optional) - Alternative tool for computing Hilbert bases
+5. **4ti2** (optional) - Alternative tool for computing Hilbert bases
    - Download from: https://4ti2.github.io/
    - Configure path via `FOURTI2_PATH` environment variable or `.env` file
    - Use with `--use-4ti2` flag as an alternative to Normaliz
@@ -70,6 +73,7 @@ Options:
   --user-friendly-polymer-basis     Generate human-readable polymer basis file
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)
+  --parametrized var1=val1 ...      Provide values for template variables in .tbn file
   -v, --verbose                     Enable verbose output
 ```
 
@@ -146,6 +150,35 @@ terminator: c* d, 75
 cap: d*, 25.5
 ```
 
+### Parametrized TBN Files
+
+TBN files support template variables and arithmetic expressions for flexible concentration specifications:
+
+```
+\UNITS: nM
+# Simple variable substitution
+monomer1: a b, {{conc1}}
+
+# Arithmetic expressions
+scaled: c d, {{base_conc * scale_factor}}
+average: e f, {{(conc1 + conc2) / 2}}
+complex: g h, {{conc1 * 0.7 + conc2 * 0.3}}
+
+# Mix templates with literal values
+fixed: i j, 100
+```
+
+**Running with parameters:**
+```bash
+tbnexplorer2 input.tbn --parametrized conc1=50 conc2=100 base_conc=75 scale_factor=2
+```
+
+**Supported operations in templates:**
+- Basic arithmetic: `+`, `-`, `*`, `/`
+- Exponentiation: `**` (e.g., `{{2 ** 3}}` evaluates to 8)
+- Parentheses for grouping: `{{(a + b) * c}}`
+- Floating point: `{{x * 1.5 + y * 0.5}}`
+
 ## Output Formats
 
 ### .tbnpolymat File
@@ -183,6 +216,10 @@ from tbnexplorer2 import TBNParser, TBN, PolymerBasisComputer, FreeEnergyCalcula
 
 # Parse TBN file
 monomers, binding_sites = TBNParser.parse_file("input.tbn")
+
+# Parse TBN file with parametrized variables
+variables = {"conc1": 50, "conc2": 100, "scale": 1.5}
+monomers, binding_sites, units, used_vars = TBNParser.parse_file("parametrized.tbn", variables)
 
 # Create TBN model
 tbn = TBN(monomers, binding_sites)
