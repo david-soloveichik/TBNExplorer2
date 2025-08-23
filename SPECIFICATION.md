@@ -189,14 +189,22 @@ The framework includes functionality for parsing .tbn files that include a param
 To parse templated .tbn files, `tbnexplorer2` is passed an optional `--parametrized` argument followed by a list of numerical variable assignments such as `conc1=90.3 conc2=50`. 
 
 ## Template syntax
-In the .tbn file, template variables are specified using double curly braces: `{{var}}`. These placeholders are replaced with the corresponding values provided via the command line during parsing.
+In the .tbn file, template variables and arithmetic expressions are specified using double curly braces: `{{expr}}`. These can be simple variable substitutions or arithmetic expressions involving variables. The expressions are evaluated using safe arithmetic evaluation and the results are used as concentration values.
 
-Example .tbn file:
+### Supported operations
+- Basic arithmetic: `+`, `-`, `*`, `/`
+- Exponentiation: `**` (e.g., `{{2 ** 3}}` evaluates to 8)
+- Parentheses for grouping: `{{(a + b) * c}}`
+- Floating point numbers: `{{x * 1.5 + y * 0.5}}`
+
+### Example .tbn file
 ```
 \UNITS: nM
-monomer1: a b*, {{conc1}}
-monomer2: c d, {{conc2}}
-monomer3: e f, 75.5  # Can mix templates with literal values
+monomer1: a b*, {{conc1}}                     # Simple variable
+monomer2: c d, {{conc2 + 10}}                 # Addition
+monomer3: e f, 75.5                           # Literal value
+monomer4: g h, {{base_conc * scale_factor}}   # Multiplication
+monomer5: i j, {{(x + y) / 2}}                # Average calculation
 ```
 
 ## Parameter storage in .tbnpolymat

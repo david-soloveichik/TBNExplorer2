@@ -1,6 +1,8 @@
 import re
 from typing import Dict, List, Optional, Tuple
 
+from simpleeval import NameNotDefined, SimpleEval
+
 from .model import BindingSite, Monomer
 
 
@@ -232,17 +234,49 @@ class TBNParser:
             remaining = parts[0].strip()
             conc_str = parts[1].strip()
 
-            # Check for template syntax {{var}}
-            template_match = re.match(r"^{{\s*(\w+)\s*}}$", conc_str)
-            if template_match:
-                var_name = template_match.group(1)
-                if var_name not in variables:
-                    raise ValueError(
-                        f"Line {line_number}: Template variable '{var_name}' not provided. "
-                        f"Use --parametrized {var_name}=VALUE to specify its value."
-                    )
-                concentration = variables[var_name]
-                used_variables[var_name] = concentration
+            # Check for template syntax {{expr}}
+            if conc_str.startswith("{{") and conc_str.endswith("}}"):
+                expr_str = conc_str[2:-2].strip()
+
+                # Try to evaluate as an expression with variables
+                try:
+                    evaluator = SimpleEval()
+                    # Allow standard math operations and functions
+                    evaluator.names = variables.copy()
+
+                    # Evaluate the expression
+                    result = evaluator.eval(expr_str)
+
+                    # Ensure result is numeric
+                    concentration = float(result)
+
+                    # Track which variables were used in the expression
+                    # SimpleEval doesn't directly track this, so we check which variables
+                    # appear in the expression string
+                    for var_name in variables:
+                        if var_name in expr_str:
+                            used_variables[var_name] = variables[var_name]
+
+                    # Only disallow negative concentrations when \UNITS is not present
+                    if concentration < 0 and units is None:
+                        raise ValueError(f"Line {line_number}: Negative concentration not allowed")
+
+                except NameNotDefined as e:
+                    # Extract variable name from the error message
+                    error_str = str(e)
+                    # simpleeval's NameNotDefined error format: "'var_name' is not defined for expression 'expr'"
+                    match = re.search(r"'(\w+)' is not defined", error_str)
+                    if match:
+                        var_name = match.group(1)
+                        raise ValueError(
+                            f"Line {line_number}: Template variable '{var_name}' not provided. "
+                            f"Use --parametrized {var_name}=VALUE to specify its value."
+                        ) from e
+                    raise ValueError(f"Line {line_number}: Error evaluating expression '{expr_str}': {e!s}") from e
+                except (TypeError, ValueError, SyntaxError) as e:
+                    raise ValueError(f"Line {line_number}: Invalid expression in template '{conc_str}': {e!s}") from e
+                except Exception as e:
+                    raise ValueError(f"Line {line_number}: Error evaluating expression '{expr_str}': {e!s}") from e
             else:
                 try:
                     concentration = float(conc_str)

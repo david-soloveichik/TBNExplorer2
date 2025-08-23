@@ -1,12 +1,15 @@
 # Parametrized TBN Example File
 # =============================
-# Use {{variable_name}} syntax to define template variables for concentrations.
-# These variables will be replaced with actual values at runtime.
+# Use {{variable_name}} syntax for simple variables or {{expression}} for arithmetic.
+# These templates will be evaluated at runtime with provided values.
 #
 # HOW TO RUN:
 # -----------
 # Basic usage with parameter assignments:
 #   tbnexplorer2 examples/parametrized_example.tbn --parametrized a_conc=100 b_conc=50.5 c_conc=25
+#
+# Example with expressions (using scale_factor):
+#   tbnexplorer2 examples/parametrized_example.tbn --parametrized a_conc=100 b_conc=50 c_conc=25 scale_factor=2
 #
 #
 # After running tbnexplorer2, the parameters are stored in the .tbnpolymat file
@@ -26,5 +29,10 @@ a_to_c* c_to_a*, 10
 
 # Additional monomers with mixed parametrized and literal concentrations
 # This shows you can combine both approaches in the same file
-Regulator1: site1* site2*, {{a_conc}}  # Uses same concentration as ComponentA
-Regulator2: site3 site1, 5.5           # Fixed concentration
+Regulator1: site1* site2*, {{a_conc}}         # Uses same concentration as ComponentA
+Regulator2: site3 site1, 5.5                  # Fixed concentration
+
+# Examples with arithmetic expressions (uncomment to use with scale_factor parameter)
+# ScaledComponent: x y, {{a_conc * scale_factor}}           # Multiply by scaling factor
+# AverageComponent: m n, {{(b_conc + c_conc) / 2}}         # Average of two concentrations
+# ComplexCalc: p q, {{a_conc * 0.5 + b_conc * 0.3}}        # Weighted combination
