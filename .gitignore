@@ -222,6 +222,7 @@ $RECYCLE.BIN/
 *_hilbert_basis.txt
 *_normaliz.in
 *_normaliz.out
+*.tbnpolymat
 
 # Temporary files
 *.tmp
