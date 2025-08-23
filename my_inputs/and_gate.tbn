@@ -1,5 +1,6 @@
 \UNITS: nM
 
+A: a1 a2, 100
 B: b1 b2, 100
 a1* a2* b1* b2*, 100
 a1 a2 b1 b2 c1, 100

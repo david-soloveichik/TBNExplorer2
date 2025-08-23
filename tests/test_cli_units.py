@@ -34,7 +34,7 @@ B: b b*, 50.0
     def test_default_concentration_units(self, mock_normaliz, mock_computer, mock_parser, mock_tbn):
         """Test that default concentration units are nM."""
         # Mock the necessary components
-        mock_parser.return_value = ([], {}, "nM")
+        mock_parser.return_value = ([], {}, "nM", {})
         mock_tbn_instance = MagicMock()
         mock_tbn_instance.check_star_limiting.return_value = (True, None)
         mock_tbn.return_value = mock_tbn_instance
@@ -61,7 +61,7 @@ B: b b*, 50.0
     def test_custom_concentration_units(self, mock_normaliz, mock_computer, mock_parser, mock_tbn):
         """Test setting custom concentration units."""
         # Mock the necessary components
-        mock_parser.return_value = ([], {})
+        mock_parser.return_value = ([], {}, None, {})
         mock_tbn_instance = MagicMock()
         mock_tbn_instance.check_star_limiting.return_value = (True, None)
         mock_tbn.return_value = mock_tbn_instance
@@ -76,7 +76,7 @@ B: b b*, 50.0
         for unit in VALID_UNITS:
             with self.subTest(unit=unit):
                 # Mock parser to return this specific unit
-                mock_parser.return_value = ([], {}, unit)
+                mock_parser.return_value = ([], {}, unit, {})
 
                 with patch("sys.argv", ["tbnexplorer2", self.temp_filename]), contextlib.suppress(SystemExit):
                     main()  # Expected SystemExit due to mocking

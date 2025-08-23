@@ -15,7 +15,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -34,7 +34,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -51,7 +51,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -66,7 +66,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -81,7 +81,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -100,7 +100,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -123,7 +123,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -147,7 +147,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -203,7 +203,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -289,7 +289,7 @@ class TestTBNParser:
             f.flush()
 
             # Should not raise error since 'C' (monomer) != 'c' (binding site)
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -308,7 +308,7 @@ class TestTBNParser:
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -327,7 +327,7 @@ a b c, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -341,7 +341,7 @@ a b c, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -394,7 +394,7 @@ a b c, 100"""
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -413,7 +413,7 @@ b a c* >monomer2, 10.5"""
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -451,7 +451,7 @@ regular: x y z, 25"""
             f.write(content)
             f.flush()
 
-            monomers, binding_sites, units = TBNParser.parse_file(f.name)
+            monomers, binding_sites, units, _ = TBNParser.parse_file(f.name)
 
         os.unlink(f.name)
 
@@ -533,7 +533,7 @@ d e* >mol2, 25"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 2 monomers (one aggregated, one unique)
             assert len(monomers) == 2
@@ -600,7 +600,7 @@ d e*, 25"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 2 monomers (one aggregated, one unique)
             assert len(monomers) == 2
@@ -632,7 +632,7 @@ c* b a, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 1 aggregated monomer
             assert len(monomers) == 1
@@ -651,7 +651,7 @@ a b c*, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 1 aggregated monomer
             assert len(monomers) == 1
@@ -684,7 +684,7 @@ monomer1: a b c*, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 1 aggregated monomer
             assert len(monomers) == 1
@@ -719,7 +719,7 @@ a b c*, 25"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 1 aggregated monomer with the name
             assert len(monomers) == 1
@@ -739,7 +739,7 @@ c* b a >mol1, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             assert len(monomers) == 1
             assert monomers[0].name == "mol1"
@@ -771,7 +771,7 @@ b a c*, 25"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             assert len(monomers) == 1
             assert monomers[0].name == "molecule"
@@ -789,7 +789,7 @@ a b d*, 50"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 2 separate monomers
             assert len(monomers) == 2
@@ -809,7 +809,7 @@ d e*"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 3 separate monomers (no aggregation)
             assert len(monomers) == 3
@@ -833,7 +833,7 @@ g e f*, 20"""
             f.write(content)
             f.flush()
 
-            monomers, binding_site_index, units = TBNParser.parse_file(f.name)
+            monomers, binding_site_index, units, _ = TBNParser.parse_file(f.name)
 
             # Should have 3 monomers (2 aggregated groups + 1 unique)
             assert len(monomers) == 3
