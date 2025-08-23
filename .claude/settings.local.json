@@ -12,7 +12,8 @@
       "Bash(cat:*)",
       "Bash(ruff check:*)",
       "Bash(grep:*)",
-      "Bash(ruff format:*)"
+      "Bash(ruff format:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],
