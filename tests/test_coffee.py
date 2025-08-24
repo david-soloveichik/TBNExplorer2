@@ -147,7 +147,7 @@ class TestCOFFEERunner:
 
         # Mock TBN
         tbn = Mock(spec=TBN)
-        tbn.concentrations = np.array([100.0, 50.0])  # nM
+        tbn.concentrations = np.array([1e-7, 5e-8])  # Already in Molar (equivalent to 100 nM, 50 nM)
         tbn.concentration_units = "nM"
 
         # Mock polymers
@@ -184,7 +184,7 @@ class TestCOFFEERunner:
         runner = COFFEERunner("/path/to/coffee")
 
         tbn = Mock(spec=TBN)
-        tbn.concentrations = np.array([100.0])
+        tbn.concentrations = np.array([1e-7])  # Already in Molar (equivalent to 100 nM)
         tbn.concentration_units = "nM"
 
         polymer = Mock(spec=Polymer)
