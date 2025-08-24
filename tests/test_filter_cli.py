@@ -308,6 +308,6 @@ a1 a2 b1 b2 c1"""
 
         assert result.returncode == 0
         assert "# Filtered polymers containing: B C" in result.stdout
-        assert "Concentration:" in result.stdout
+        assert "# Concentration:" in result.stdout
         # Free energy is no longer included in output to save space
         assert "Free energy:" not in result.stdout

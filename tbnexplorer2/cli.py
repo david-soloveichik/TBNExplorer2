@@ -29,11 +29,11 @@ Examples:
   # Compute polymer basis for a TBN file (generates .tbnpolymat only)
   tbnexplorer2 example.tbn
   
-  # Also save user-friendly polymer basis text file
+  # Also save user-friendly polymer basis file
   tbnexplorer2 example.tbn --user-friendly-polymer-basis
   
   # Specify custom output file for user-friendly basis
-  tbnexplorer2 example.tbn --user-friendly-polymer-basis --output my-polymer-basis.txt
+  tbnexplorer2 example.tbn --user-friendly-polymer-basis --output my-polymer-basis.tbnpolys
   
   # Use custom Normaliz path
   tbnexplorer2 example.tbn --normaliz-path /path/to/normaliz
@@ -52,7 +52,9 @@ TBN File Format:
 
     parser.add_argument("input_file", help="Input TBN file")
 
-    parser.add_argument("--output", "-o", help="Output file for polymer basis (default: [input]-polymer-basis.txt)")
+    parser.add_argument(
+        "--output", "-o", help="Output file for polymer basis (default: [input]-polymer-basis.tbnpolys)"
+    )
 
     parser.add_argument(
         "--normaliz-path", default=NORMALIZ_PATH, help=f"Path to Normaliz executable (default: {NORMALIZ_PATH})"
@@ -93,7 +95,7 @@ TBN File Format:
     parser.add_argument(
         "--user-friendly-polymer-basis",
         action="store_true",
-        help="Save user-friendly polymer basis to [input]-polymer-basis.txt file",
+        help="Save user-friendly polymer basis to [input]-polymer-basis.tbnpolys file",
     )
 
     parser.add_argument(
@@ -114,7 +116,7 @@ TBN File Format:
     input_path = Path(args.input_file)
     base_name = input_path.stem
 
-    output_file = args.output or str(input_path.parent / f"{base_name}-polymer-basis.txt")
+    output_file = args.output or str(input_path.parent / f"{base_name}-polymer-basis.tbnpolys")
 
     # Always generate .tbnpolymat file
     polymat_file = str(input_path.parent / f"{base_name}.tbnpolymat")

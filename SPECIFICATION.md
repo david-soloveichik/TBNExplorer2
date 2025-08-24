@@ -2,7 +2,7 @@
 # Background 
 We are working with thermodynamics of abstract chemical systems (the model is called the TBN model). A TBN is defined in terms of binding sites (aka domains), monomers, and polymers (aka complexes). Conceptually, monomers are multisets of binding sites, and polymers are multisets of monomers. The big picture goal is given a set of monomers (described in terms of their binding sites) and their concentrations, we want to compute the equilibrium concentrations of the polymers. 
 
-We will be building a Python library. The functionality should also be accessible via a command line (CLI) tool called `tbnexplorer2`.
+We will be building a Python library. The functionality should also be accessible via command line (CLI) tools including `tbnexplorer2` and other secondary tools.
 
 # Input file encoding (.tbn) and TBN representation
 A binding site is a symbol like "a" or "ahu34_8" or "5" (any string not containing white space nor any of the following: ">,*|:\\" which will have special meaning). There are two types of binding sites, unstar and star. Star binding sites always have a "*" as the last character. The idea is that corresponding star and unstar binding sites bind (they are complementary).
@@ -88,13 +88,7 @@ Now we want to find the Hilbert basis of the cone corresponding to solutions of 
 Important: The Hilbert basis H may be very large! There could be hundreds of thousands of vectors in H. Thus these operations need to be very efficient. 
 
 We optionally save the polymer basis into a user-friendly text file. If the command line option `--user-friendly-polymer-basis` is given to out CLI tool `tbnexplorer2`, it should do the following: 
-Assuming we are given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.txt`. This file should represent the polymers in the polymer basis in the following user-friendly way:
-- There should be an empty line between polymers
-- Each polymer p is represented by its monomers, one per line
-    - The line should start with "n | " where n is the multiplicity of the monomer in p
-    - After this, the monomer is represented as just its "name" if this name was given in the input .tbn file.
-    - If the monomer's name was not given, then the monomer should be represented as its binding site representation; eg: "a a* b2 b1"
-    Note: the binding sites should appear in the same order as in the original .tbn input file (but extra whitespace should be removed).
+Assuming we are given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.tbnpolys`. This file should represent the polymers in the polymer basis in the user-friendly way as described below in the section on .tbnpolys files. 
 
 The CLI tool should return to the command line the number of polymers in the polymer basis.
 
@@ -138,6 +132,17 @@ Note that the `--no-free-energies` option also disables the concentrations compu
 The concentration units are specified directly in the .tbn file using the `UNITS` keyword (see above). The monomer concentrations in the .tbn file are in the units specified by the UNITS line. These should be converted to Molar for COFFEE and then _back_ to the original units for the .tbnpolymat file. The comments on top of the .tbnpolymat file should also specify the units.
 
 
+# User-friendly representation of polymers in .tbnpolys files
+While .tbnpolymat files provide a matrix representation of polymers (and their concentrations), we also want a user-friendly (text-based) representation of polymers. This is provided by .tbnpolys files. We need to be able to output .tbnpolys files, as well as to take them as input (for functionality to be developed later). We should have a parses for these files in the Python package.
+
+## Syntax of .tbnpolys files
+- Comments are designated by "#" in the same way as for .tbn files.
+- There should be at least one _empty line_ between different polymers (this is how we can tell when one polymer ends and the next begins). Note: Comments shouldn't count as empty lines
+- Each polymer p is represented by its monomers, one per line
+    - Each monomer can start with a multiplicity prefix of the form "n | " where n is the multiplicity of the monomer. If the multiplicity prefix is omitted, then we assume n = 1 by default.
+    - After the multiplicity prefix, comes the monomer specification. This can either be the "name" of the monomer (as given in the .tbn file), or its binding site representation (eg: "a a* b2 b1"). Note: when the .tbnpolys file is given as user input, the binding sites can be given in any order, not necessarily in the same order as in the .tbn file. (Ie they should be mapped to vector representation of monomer.)
+
+
 # Filtering output .tbnpolymat file and user-friendly presentation with `tbnexplorer2-filter`
 The big picture is that often we want to know about which polymers certain monomers end up in at equilibrium. This can be hard to extract from the raw .tbnpolymat file. 
 We make an additional command line tool `tbnexplorer2-filter` which takes a .tbn file as input. From the file name it infers the corresponding .tbnpolymat file as well. 
@@ -150,10 +155,10 @@ The tool should output to the standard output only the polymers containing _all_
 If no monomer names are specified as input, then we do not do any filtering by monomer inclusion and return all polymers. (The output limits described below would still apply.)
 
 ## Output format
-The output format should be user-friendly like in the `<example>-polymer-basis.txt` file, except that polymer concentrations are listed. 
+The output format should be user-friendly in `.tbnpolys` syntax. Polymer concentrations should be listed as comments after each polymer.
 The order of the polymers should be in order of decreasing concentration.
 The tool should also output what fraction (percent) of the _total concentration_ of all polymers in .tbnpolymat is the sum of the concentrations of the polymers matching the filtering criteria.
-To save space, we should not output the free energies of the complexes.
+(To save space, we should not output the free energies of the complexes.)
 Also, let's format the concentrations "nicely": i.e., instead of "9.99e+01 nM" we should say "99.9 nM"
 
 ## Output limit
@@ -212,3 +217,5 @@ When a parametrized .tbn file is processed, the used parameter values are stored
 
 ## Compatibility with tbnexplorer2-filter
 The `tbnexplorer2-filter` command automatically reads parameters from the .tbnpolymat file when present. This ensures that filtering operations work correctly with parametrized .tbn files without requiring the user to re-specify the parameter values.
+
+

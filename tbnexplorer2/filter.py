@@ -405,11 +405,11 @@ class PolymerFilter:
                         # Unnamed monomer - show binding sites
                         output_lines.append(f"{count} | {sites_str}")
 
-            # Add concentration if available (using nice formatting)
+            # Add concentration as comment if available (using nice formatting)
             if concentration is not None:
                 units = self.units or ""
                 formatted_conc = format_concentration_nicely(concentration, units)
-                output_lines.append(f"Concentration: {formatted_conc}")
+                output_lines.append(f"# Concentration: {formatted_conc}")
 
             # Note: Free energy is not included in output to save space
 
@@ -475,11 +475,11 @@ class PolymerFilter:
                         # Unnamed monomer - show binding sites
                         output_lines.append(f"{count} | {sites_str}")
 
-            # Add concentration if available (using nice formatting)
+            # Add concentration as comment if available (using nice formatting)
             if concentration is not None:
                 units = self.units or ""
                 formatted_conc = format_concentration_nicely(concentration, units)
-                output_lines.append(f"Concentration: {formatted_conc}")
+                output_lines.append(f"# Concentration: {formatted_conc}")
 
             # Note: Free energy is not included in output to save space
 

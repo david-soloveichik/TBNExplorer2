@@ -44,7 +44,7 @@ monomer2: a* b*
         input_file.write_text(self.tbn_content)
 
         # Expected output file path
-        expected_output = self.subdir / "test-polymer-basis.txt"
+        expected_output = self.subdir / "test-polymer-basis.tbnpolys"
 
         # Mock the necessary components to avoid actual computation
         with patch("tbnexplorer2.cli.TBNParser") as mock_parser, patch("tbnexplorer2.cli.TBN") as mock_tbn, patch(
@@ -126,7 +126,7 @@ monomer2: a* b*
         input_file.write_text(self.tbn_content)
 
         # Expected output file path (same directory)
-        expected_output = Path(self.test_dir) / "current-polymer-basis.txt"
+        expected_output = Path(self.test_dir) / "current-polymer-basis.tbnpolys"
 
         # Mock the necessary components
         with patch("tbnexplorer2.cli.TBNParser") as mock_parser, patch("tbnexplorer2.cli.TBN") as mock_tbn, patch(

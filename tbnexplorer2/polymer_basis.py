@@ -7,6 +7,7 @@ from .coffee import COFFEERunner
 from .model import TBN, Monomer
 from .normaliz import NormalizRunner
 from .polymat_io import PolymatData, PolymatWriter, check_matrix_hash
+from .tbnpolys_io import TbnpolysWriter
 from .units import from_molar, get_unit_display_name
 
 
@@ -150,36 +151,29 @@ class PolymerBasisComputer:
 
     def save_polymer_basis(self, polymers: List[Polymer], output_file: str):
         """
-        Save polymer basis to a text file in user-friendly format.
+        Save polymer basis to a .tbnpolys file in user-friendly format.
 
-        Format:
-        - Empty line between polymers
+        Uses the .tbnpolys format specification:
+        - Comments designated by "#"
+        - Empty lines between polymers
         - Each polymer represented by its monomers, one per line
-        - Line starts with "n | " where n is the multiplicity
+        - Optional multiplicity prefix "n | " where n is the count
         - Monomer shown as name (if available) or binding sites
 
         Args:
             polymers: List of Polymer objects
             output_file: Path to output file
         """
-        with open(output_file, "w") as f:
-            f.write(f"# Polymer basis - {len(polymers)} polymers\n")
-            f.write("#\n")
+        from pathlib import Path
 
-            for i, polymer in enumerate(polymers):
-                if i > 0:
-                    f.write("\n")  # Empty line between polymers
+        # Convert polymers to vectors
+        polymer_vectors = [polymer.monomer_counts for polymer in polymers]
 
-                f.write(f"# Polymer {i + 1}\n")
-
-                # Get monomers with their counts
-                monomers_with_counts = polymer.get_monomers_with_counts()
-
-                for count, monomer in monomers_with_counts:
-                    # Format: "count | monomer_representation"
-                    monomer_str = monomer.name or monomer.get_binding_sites_str()
-
-                    f.write(f"{count} | {monomer_str}\n")
+        # Create writer and save
+        writer = TbnpolysWriter(self.tbn)
+        writer.write_polymers(
+            polymer_vectors, Path(output_file), header_comment=f"Polymer basis - {len(polymers)} polymers"
+        )
 
         print(f"Saved polymer basis with {len(polymers)} polymers to {output_file}")
 

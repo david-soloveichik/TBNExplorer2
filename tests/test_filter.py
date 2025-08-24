@@ -295,7 +295,7 @@ C: c1 c2, 100"""
         assert "# Total concentration fraction:" in output
         assert "# Concentration units: nM" in output
         assert "# Polymer 1" in output
-        assert "Concentration:" in output
+        assert "# Concentration:" in output
         # Free energy is no longer included in output to save space
         assert "Free energy:" not in output
 
