@@ -93,8 +93,9 @@ class TestCOFFEERunner:
         runner = COFFEERunner()
         tbn = Mock(spec=TBN)
 
-        # Test with nM units (should convert to M)
-        tbn.concentrations = np.array([100.0, 50.0, 25.0])  # nM
+        # tbn.concentrations should already return values in Molar units
+        # These correspond to 100 nM, 50 nM, 25 nM after conversion to Molar
+        tbn.concentrations = np.array([1e-7, 5e-8, 2.5e-8])  # Already in Molar
         tbn.concentration_units = "nM"
 
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".con") as f:
@@ -108,7 +109,7 @@ class TestCOFFEERunner:
                 lines = f.readlines()
 
             assert len(lines) == 3
-            # 100 nM = 1e-7 M
+            # Values should be written as-is since they're already in Molar
             assert float(lines[0].strip()) == pytest.approx(1e-7)
             assert float(lines[1].strip()) == pytest.approx(5e-8)
             assert float(lines[2].strip()) == pytest.approx(2.5e-8)

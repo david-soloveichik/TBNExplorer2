@@ -117,13 +117,10 @@ class COFFEERunner:
         Format: One concentration per line, in order of monomers.
         COFFEE expects concentrations in Molar units.
         """
-        from .units import to_molar
-
         with open(filepath, "w") as f:
             for conc in tbn.concentrations:
-                # Convert to Molar if needed
-                conc_in_molar = to_molar(conc, tbn.concentration_units)
-                f.write(f"{conc_in_molar}\n")
+                # tbn.concentrations already returns values in Molar units
+                f.write(f"{conc}\n")
 
     def _parse_coffee_output(self, filepath: str) -> np.ndarray:
         """
