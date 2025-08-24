@@ -67,11 +67,11 @@ class COFFEERunner:
         try:
             # Prepare CFE file (polymer matrix with free energies)
             cfe_path = os.path.join(work_dir, "polymers.cfe")
-            self._write_cfe_file(cfe_path, polymers)
+            self._write_cfe_file(polymers, cfe_path)
 
             # Prepare CON file (monomer concentrations)
             con_path = os.path.join(work_dir, "monomers.con")
-            self._write_con_file(con_path, tbn)
+            self._write_con_file(tbn, con_path)
 
             # Run COFFEE
             output_path = os.path.join(work_dir, "equilibrium.txt")
@@ -96,7 +96,7 @@ class COFFEERunner:
             if use_temp_dir:
                 temp_dir_obj.cleanup()
 
-    def _write_cfe_file(self, filepath: str, polymers: List["Polymer"]):
+    def _write_cfe_file(self, polymers: List["Polymer"], filepath: str):
         """
         Write CFE file for COFFEE.
 
@@ -110,15 +110,20 @@ class COFFEERunner:
                 free_energy = polymer.compute_free_energy()
                 f.write(f"{counts_str} {free_energy}\n")
 
-    def _write_con_file(self, filepath: str, tbn: TBN):
+    def _write_con_file(self, tbn: TBN, filepath: str):
         """
         Write CON file for COFFEE.
 
         Format: One concentration per line, in order of monomers.
+        COFFEE expects concentrations in Molar units.
         """
+        from .units import to_molar
+
         with open(filepath, "w") as f:
             for conc in tbn.concentrations:
-                f.write(f"{conc}\n")
+                # Convert to Molar if needed
+                conc_in_molar = to_molar(conc, tbn.concentration_units)
+                f.write(f"{conc_in_molar}\n")
 
     def _parse_coffee_output(self, filepath: str) -> np.ndarray:
         """

@@ -61,7 +61,7 @@ class TbnpolysParser:
 
             # Check if this is a comment-only line (shouldn't count as empty)
             is_comment_only = line.startswith("#")
-            
+
             # Remove comments from non-comment-only lines
             if not is_comment_only and "#" in line:
                 line = line[: line.index("#")].strip()

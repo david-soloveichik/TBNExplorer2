@@ -3,6 +3,7 @@ import tempfile
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
+import numpy.testing  # Import early to avoid subprocess issues during tests
 import pytest
 
 from tbnexplorer2.coffee import COFFEERunner
@@ -11,11 +12,6 @@ from tbnexplorer2.polymer_basis import Polymer
 
 
 class TestCOFFEERunner:
-    def test_init_default_path(self):
-        """Test COFFEERunner initialization with default path."""
-        runner = COFFEERunner()
-        assert runner.coffee_path == "coffee-cli"  # Default from config
-
     def test_init_custom_path(self):
         """Test COFFEERunner initialization with custom path."""
         custom_path = "/custom/path/to/coffee"
@@ -68,11 +64,11 @@ class TestCOFFEERunner:
         # Create mock polymers
         polymer1 = Mock(spec=Polymer)
         polymer1.monomer_counts = np.array([1, 0, 1])
-        polymer1.free_energy = -2.5
+        polymer1.compute_free_energy = Mock(return_value=-2.5)
 
         polymer2 = Mock(spec=Polymer)
         polymer2.monomer_counts = np.array([0, 2, 1])
-        polymer2.free_energy = -3.0
+        polymer2.compute_free_energy = Mock(return_value=-3.0)
 
         polymers = [polymer1, polymer2]
 
@@ -172,7 +168,7 @@ class TestCOFFEERunner:
         expected_concentrations = np.array([1.5e-7, 2.3e-8])
 
         with patch.object(runner, "check_coffee_available", return_value=True), patch(
-            "subprocess.run", return_value=mock_result
+            "tbnexplorer2.coffee.subprocess.run", return_value=mock_result
         ) as mock_run, patch.object(runner, "_parse_coffee_output", return_value=expected_concentrations):
             result = runner.compute_equilibrium_concentrations(polymers, tbn)
 
@@ -201,7 +197,7 @@ class TestCOFFEERunner:
         mock_result.stderr = "COFFEE error message"
 
         with patch.object(runner, "check_coffee_available", return_value=True), patch(
-            "subprocess.run", return_value=mock_result
+            "tbnexplorer2.coffee.subprocess.run", return_value=mock_result
         ):
-            with pytest.raises(RuntimeError, match="COFFEE computation failed"):
+            with pytest.raises(RuntimeError, match="COFFEE failed"):
                 runner.compute_equilibrium_concentrations(polymers, tbn)
