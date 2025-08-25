@@ -25,9 +25,13 @@ TBN Explorer also includes advanced extensions for:
 
 ### References
 [1] David Doty, Trent A. Rogers, David Soloveichik, Chris Thachuk, Damien Woods, "Thermodynamic binding networks," DNA23, 2017.
+
 [2] Keenan Breik, Chris Thachuk, Marijn Heule, David Soloveichik, "Computing properties of stable configurations of thermodynamic binding networks," Theoretical Computer Science 785, 17-29, 2019.
+
 [3] David Haley, David Doty, "Computing properties of thermodynamic binding networks: An integer programming approach," DNA27, 2021.
+
 [4] https://coffeesolver.dev/
+
 [5] Hamidreza Akef, Minki Hhan, David Soloveichik, "Computing and Bounding Equilibrium Concentrations in Athermic Chemical Systems," DNA31, 2025.
 
 
