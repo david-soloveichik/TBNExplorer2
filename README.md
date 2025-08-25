@@ -10,19 +10,25 @@ The TBN (Thermodynamics of Binding Networks) model is a framework for studying a
 - **Monomers** are collections (multisets) of binding sites  
 - **Polymers** (complexes) are collections of monomers that bind together through complementary binding sites
 
-The system must be star limiting and enthalpy is assumed to be infinite.
+Enthalpy is assumed to be infinitely preferred over entropy and the system must be "star-binding site limiting". Please see [1,2] for details of the TBN model.
 
 Given a set of monomers (described by their binding sites) and their initial concentrations, TBN Explorer computes:
-1. The **polymer basis** - the set of fundamental "unsplittable" polymers
+1. The **polymer basis** - the set of fundamental "unsplittable" polymers [3]
 2. The **free energies** of each polymer equal to the number of bonds
-3. The **equilibrium concentrations** of all polymers in the system
+3. The **equilibrium concentrations** of all polymers in the system [4]
 
 ### Extensions
 
 TBN Explorer also includes advanced extensions for:
-- **Canonical Reactions Analysis**: Identifying irreducible reactions between on-target and off-target polymers
-- **IBOT Algorithm**: Computing concentration exponents for maintaining detailed balance in polymer networks
+- **Canonical Reactions Analysis**: Identifying irreducible reactions between on-target and off-target polymers [5]
+- **IBOT Algorithm**: Computing concentration exponents for maintaining detailed balance in polymer networks [5]
 
+### References
+[1] David Doty, Trent A. Rogers, David Soloveichik, Chris Thachuk, Damien Woods, "Thermodynamic binding networks," DNA23, 2017.
+[2] Keenan Breik, Chris Thachuk, Marijn Heule, David Soloveichik, "Computing properties of stable configurations of thermodynamic binding networks," Theoretical Computer Science 785, 17-29, 2019.
+[3] David Haley, David Doty, "Computing properties of thermodynamic binding networks: An integer programming approach," DNA27, 2021.
+[4] https://coffeesolver.dev/
+[5] Hamidreza Akef, Minki Hhan, David Soloveichik, "Computing and Bounding Equilibrium Concentrations in Athermic Chemical Systems," DNA31, 2025.
 
 
 ## Installation
@@ -129,7 +135,7 @@ Options:
 - Generates concentration specifications for all polymers
 
 **Inputs:**
-- `input.tbn`: TBN file without concentrations (no \\UNITS)
+- `input.tbn`: TBN file without concentrations (no \UNITS)
 - `on_target.tbnpolys`: File specifying which polymers are considered "on-target"
 
 **Outputs:**
@@ -239,9 +245,10 @@ Human-readable format showing polymer composition:
 1 | a b c
 
 # Polymer 2
-1 | initiator
+initiator
 3 | propagator
 ```
+Note: when the multiplicity prefix "{n} |" is missing, the multiplicity is assumed to be 1.
 
 ## Extensions
 
@@ -305,7 +312,7 @@ Polymer specification files for defining on-target polymers and viewing results.
 3 | d e f
 
 # Concentration exponents (in IBOT output)
-μ: 1.5
+# μ: 1.5
 ```
 
 **Key Rules:**
