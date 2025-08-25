@@ -19,9 +19,7 @@ Given a set of monomers (described by their binding sites) and their initial con
 
 ### Extensions
 
-TBN Explorer also includes advanced extensions for:
-- **Canonical Reactions Analysis**: Identifying irreducible reactions between on-target and off-target polymers [5]
-- **IBOT Algorithm**: Computing concentration exponents for maintaining detailed balance in polymer networks [5]
+TBN Explorer also includes an extension for implementing the algorithm from [5] for computing off-target polymer concentration using iterative detailed balancing, here called the **IBOT Algorithm** (Iterative Balancing of Off-Target Polymers").
 
 ### References
 [1] David Doty, Trent A. Rogers, David Soloveichik, Chris Thachuk, Damien Woods, "Thermodynamic binding networks," DNA23, 2017.
