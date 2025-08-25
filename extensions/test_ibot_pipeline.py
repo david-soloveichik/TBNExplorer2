@@ -119,7 +119,13 @@ def parse_polymer_concentrations(tbnpolymat_file: Path) -> Tuple[List[List[int]]
     return polymers, concentrations, units
 
 
-def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List[float], test_units: str = "nM"):
+def run_ibot_pipeline_test(
+    input_tbn: Path,
+    on_target_file: Path,
+    c_values: List[float],
+    test_units: str = "nM",
+    use_mole_fractions: bool = True,
+):
     """Run the complete IBOT pipeline test.
 
     Args:
@@ -127,6 +133,7 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
         on_target_file: Path to .tbnpolys file specifying on-target polymers
         c_values: List of base concentration values to test
         test_units: Units to use for testing (default: nM)
+        use_mole_fractions: If True, use rho_H2O = 55.14 M; if False, use rho_H2O = 1 (default: True)
     """
     print(f"\n{'=' * 60}")
     print("Testing IBOT Pipeline")
@@ -134,6 +141,7 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
     print(f"Input TBN: {input_tbn}")
     print(f"On-target file: {on_target_file}")
     print(f"Test concentrations: {c_values} {test_units}")
+    print(f"Use mole fractions: {use_mole_fractions}")
 
     # Create temporary directory for outputs
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -146,9 +154,13 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
 
             # Convert c to Molar for calculations
             c_molar = to_molar(c, test_units)
-            rho_h2o = 55.14  # Water density at 37C in Molar
+            rho_h2o = (
+                55.14 if use_mole_fractions else 1.0
+            )  # Water density at 37C in Molar, or 1 if not using mole fractions
             print(f"c' (in Molar) = {c_molar:.6e}")
-            print(f"rho_H2O = {rho_h2o} M")
+            print(
+                f"rho_H2O = {rho_h2o} M" + (" (mole fractions mode)" if use_mole_fractions else " (no mole fractions)")
+            )
 
             # Step 1: Run tbnexplorer2-ibot to get concentration exponents
             ibot_output_prefix = tmpdir / f"test_c{c}"
@@ -207,8 +219,11 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
             # Convert concentrations to Molar for comparison
             concentrations_molar = [to_molar(conc, units) for conc in concentrations]
 
-            # Step 3: Compare concentrations with ((c'/rho_H2O) ** μ(p)) * rho_H2O
-            print("\nComparing concentrations with ((c'/rho_H2O) ** μ(p)) * rho_H2O:")
+            # Step 3: Compare concentrations with expected formula
+            if use_mole_fractions:
+                print("\nComparing concentrations with ((c'/rho_H2O) ** μ(p)) * rho_H2O:")
+            else:
+                print("\nComparing concentrations with c' ** μ(p):")
             print(f"{'Polymer':<20} {'μ(p)':<10} {'Expected (M)':<15} {'Actual (M)':<15} {'Rel. Error':<12}")
             print("-" * 80)
 
@@ -231,8 +246,13 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
                 # which should be true for the IBOT output
                 if i < len(mu_values):
                     mu = mu_values[i]
-                    # Use the mole fraction formula: ((c'/rho_H2O) ** μ(p)) * rho_H2O
-                    expected_conc_molar = ((c_molar / rho_h2o) ** mu) * rho_h2o
+                    # Use the appropriate formula based on mole fraction mode
+                    if use_mole_fractions:
+                        # Mole fraction formula: ((c'/rho_H2O) ** μ(p)) * rho_H2O
+                        expected_conc_molar = ((c_molar / rho_h2o) ** mu) * rho_h2o
+                    else:
+                        # Simple formula: c' ** μ(p)
+                        expected_conc_molar = c_molar**mu
 
                     # Calculate relative error
                     if expected_conc_molar > 0:
@@ -280,27 +300,60 @@ def run_ibot_pipeline_test(input_tbn: Path, on_target_file: Path, c_values: List
 
 def main():
     """Run the IBOT pipeline test with sample data."""
-    # Use the and_gate example from the extensions directory
-    extensions_dir = Path(__file__).parent
-    input_tbn = extensions_dir / "my_inputs" / "and_gate.tbn"
-    on_target_file = extensions_dir / "my_inputs" / "and_gate_on-target.tbnpolys"
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Test the IBOT pipeline with different configurations")
+    parser.add_argument(
+        "input_tbn",
+        type=str,
+        help="Path to input .tbn file (without concentrations)",
+    )
+    parser.add_argument(
+        "on_target_file",
+        type=str,
+        help="Path to .tbnpolys file specifying on-target polymers",
+    )
+    parser.add_argument(
+        "--no-mole-fractions",
+        action="store_true",
+        help="Don't use mole fractions (equivalent to setting rho_H2O = 1)",
+    )
+    parser.add_argument(
+        "--concentrations",
+        nargs="+",
+        type=float,
+        default=[10.0, 100.0],
+        help="Base concentration values to test (default: 10.0 100.0)",
+    )
+    parser.add_argument(
+        "--units",
+        default="nM",
+        help="Concentration units (default: nM)",
+    )
+    args = parser.parse_args()
+
+    # Convert to Path objects
+    input_tbn = Path(args.input_tbn)
+    on_target_file = Path(args.on_target_file)
 
     # Check if files exist
     if not input_tbn.exists():
         print(f"ERROR: Input file not found: {input_tbn}")
-        print("Please ensure the test data files are present in the extensions/my_inputs directory")
         return 1
 
     if not on_target_file.exists():
         print(f"ERROR: On-target file not found: {on_target_file}")
-        print("Please ensure the test data files are present in the extensions/my_inputs directory")
         return 1
 
-    # Test with multiple concentration values
-    c_values = [10.0, 100.0]
+    # Use command-line arguments
+    use_mole_fractions = not args.no_mole_fractions
+    c_values = args.concentrations
+    test_units = args.units
 
     try:
-        run_ibot_pipeline_test(input_tbn, on_target_file, c_values, test_units="nM")
+        run_ibot_pipeline_test(
+            input_tbn, on_target_file, c_values, test_units=test_units, use_mole_fractions=use_mole_fractions
+        )
         return 0
     except Exception as e:
         print(f"\nERROR: Test failed with exception: {e}")
