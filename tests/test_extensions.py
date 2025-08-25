@@ -132,6 +132,52 @@ class TestIBOTAlgorithm:
         # Ratio = 1/2 = 0.5
         assert metrics.ratio == 0.5
 
+    def test_ibot_tbn_generation_with_units(self):
+        """Test .tbn generation with proper unit conversion."""
+        tbn = create_test_tbn()
+        polymers = [np.array([1, 0, 0]), np.array([0, 1, 0])]
+        on_target_indices = {0, 1}
+        reactions = []  # No reactions for simplicity
+
+        ibot = IBOTAlgorithm(tbn, polymers, on_target_indices, reactions)
+
+        # All on-target polymers should have μ = 1
+        concentration_exponents = ibot.run()
+
+        # Test .tbn generation with unit conversion
+        with tempfile.NamedTemporaryFile(suffix=".tbn", delete=False) as f:
+            output_path = Path(f.name)
+
+        try:
+            # Generate with c=100 nM
+            ibot.generate_tbn_output(output_path, 100, "nM")
+
+            # Read and verify the file
+            content = output_path.read_text()
+            assert "\\UNITS: nM" in content
+
+            # Verify concentrations are calculated correctly
+            # c' = 100 nM = 100e-9 M = 1e-7 M
+            # Each monomer should have concentration = count * (1e-7)^1
+            # Converted back to nM = 100 nM for each monomer appearance
+            lines = content.strip().split("\n")
+            monomer_count = 0
+            for line in lines:
+                if ", " in line and not line.startswith("#"):
+                    monomer_count += 1
+                    # Extract concentration value
+                    conc_str = line.split(", ")[1]
+                    conc_val = float(conc_str)
+                    # Monomers M1 and M2 each appear once in their respective polymers with μ=1
+                    # So concentration should be 100 nM
+                    # M3 doesn't appear in any of our polymers, so should be 0
+                    if monomer_count <= 2:
+                        assert abs(conc_val - 100) < 0.01
+                    else:
+                        assert abs(conc_val) < 0.01  # M3 should be 0
+        finally:
+            output_path.unlink()
+
     def test_ibot_with_tbnpolys_output(self):
         """Test IBOT output generation."""
         tbn = create_test_tbn()
@@ -147,8 +193,13 @@ class TestIBOTAlgorithm:
         # Run the algorithm
         concentration_exponents = ibot.run()
 
-        # Check that all polymers have been assigned
-        assert len(concentration_exponents) == 3
+        # Check that only assigned polymers are returned
+        # Polymer 0 is on-target (μ=1), polymer 1 gets assigned via reaction
+        # Polymer 2 is never involved in any reaction, so it remains unassigned (μ=0)
+        assert len(concentration_exponents) == 2
+        assert 0 in concentration_exponents  # On-target
+        assert 1 in concentration_exponents  # Assigned via reaction
+        assert 2 not in concentration_exponents  # Unassigned, removed
 
         # Test output generation (just check it doesn't crash)
         with tempfile.NamedTemporaryFile(suffix=".tbnpolys", delete=False) as f:
@@ -212,6 +263,11 @@ class TestEndToEnd:
         concentration_exponents = ibot.run()
 
         # Check results
-        assert len(concentration_exponents) == len(polymer_vectors)
+        # Only assigned polymers should be in the result
+        assert len(concentration_exponents) <= len(polymer_vectors)
+        # All on-target polymers should be included and have μ = 1
         for idx in on_target_indices:
+            assert idx in concentration_exponents
             assert concentration_exponents[idx] == 1.0  # On-target should have μ = 1
+        # Some off-target polymers should have been assigned
+        assert len(concentration_exponents) > len(on_target_indices)

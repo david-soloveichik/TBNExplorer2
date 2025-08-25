@@ -12,6 +12,7 @@ import numpy as np
 
 from tbnexplorer2.model import TBN
 from tbnexplorer2.tbnpolys_io import TbnpolysWriter
+from tbnexplorer2.units import to_molar
 
 from .canonical_reactions import Reaction
 
@@ -128,8 +129,15 @@ class IBOTAlgorithm:
 
             print(f"IBOT iteration {iteration}: Assigned μ={min_ratio:.6f} to {len(polymers_to_assign)} polymers")
 
-        # Return as dictionary
-        return {i: self.mu[i] for i in range(len(self.polymers))}
+        # Remove polymers that were never assigned (μ = 0)
+        # These are off-target polymers that cannot be generated from on-target ones
+        assigned_polymers = {}
+        for i in range(len(self.polymers)):
+            # Keep all on-target polymers and off-target polymers with μ > 0
+            if i in self.on_target_indices or self.mu[i] > 0:
+                assigned_polymers[i] = self.mu[i]
+
+        return assigned_polymers
 
     def generate_tbnpolys_output(self, output_file: Path):
         """
@@ -147,6 +155,10 @@ class IBOTAlgorithm:
         off_target_mus = []
 
         for i, polymer in enumerate(self.polymers):
+            # Skip unassigned off-target polymers (μ = 0)
+            if i not in self.on_target_indices and self.mu[i] == 0:
+                continue
+
             if i in self.on_target_indices:
                 on_target_polymers.append(polymer)
                 on_target_mus.append(self.mu[i])
@@ -221,23 +233,36 @@ class IBOTAlgorithm:
         Generate .tbn file with computed monomer concentrations.
 
         Each monomer i is assigned concentration sum over all polymers p of:
-        p[i] * c^μ(p) where p[i] is the count of monomer i in polymer p.
+        p[i] * c'^μ(p) where p[i] is the count of monomer i in polymer p,
+        and c' is c converted to Molar.
 
         Args:
             output_file: Path to output .tbn file
-            c: Base concentration value
+            c: Base concentration value (in specified units)
             units: Concentration units (e.g., 'nM', 'uM')
         """
-        # Compute monomer concentrations
+        # Convert c to Molar for computation
+        c_molar = to_molar(c, units)
+
+        # Compute monomer concentrations in Molar
         monomer_concentrations = np.zeros(len(self.tbn.monomers))
 
         for p_idx, polymer in enumerate(self.polymers):
+            # Skip unassigned off-target polymers
+            if p_idx not in self.on_target_indices and self.mu[p_idx] == 0:
+                continue
+
             mu_p = self.mu[p_idx]
-            concentration_factor = c**mu_p
+            concentration_factor = c_molar**mu_p
 
             for m_idx, count in enumerate(polymer):
                 if count > 0:
                     monomer_concentrations[m_idx] += count * concentration_factor
+
+        # Convert concentrations back to specified units
+        from tbnexplorer2.units import from_molar
+
+        monomer_concentrations = from_molar(monomer_concentrations, units)
 
         # Generate .tbn file content
         lines = []
