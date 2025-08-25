@@ -233,8 +233,8 @@ class IBOTAlgorithm:
         Generate .tbn file with computed monomer concentrations.
 
         Each monomer i is assigned concentration sum over all polymers p of:
-        p[i] * c'^μ(p) where p[i] is the count of monomer i in polymer p,
-        and c' is c converted to Molar.
+        p[i] * ((c'/rho_H2O)^μ(p)) * rho_H2O where p[i] is the count of monomer i in polymer p,
+        c' is c converted to Molar, and rho_H2O = 55.14 M is the density of water at 37C.
 
         Args:
             output_file: Path to output .tbn file
@@ -243,6 +243,9 @@ class IBOTAlgorithm:
         """
         # Convert c to Molar for computation
         c_molar = to_molar(c, units)
+
+        # Water density at 37C in Molar
+        rho_h2o = 55.14
 
         # Compute monomer concentrations in Molar
         monomer_concentrations = np.zeros(len(self.tbn.monomers))
@@ -253,7 +256,8 @@ class IBOTAlgorithm:
                 continue
 
             mu_p = self.mu[p_idx]
-            concentration_factor = c_molar**mu_p
+            # Use mole fraction logic: ((c'/rho_H2O)^μ(p)) * rho_H2O
+            concentration_factor = ((c_molar / rho_h2o) ** mu_p) * rho_h2o
 
             for m_idx, count in enumerate(polymer):
                 if count > 0:
