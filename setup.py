@@ -11,6 +11,7 @@ setup(
         "console_scripts": [
             "tbnexplorer2=tbnexplorer2.cli:main",
             "tbnexplorer2-filter=tbnexplorer2.filter_cli:main",
+            "tbnexplorer2-ibot=extensions.ibot_cli:main",
         ],
     },
     python_requires=">=3.8",

@@ -88,7 +88,7 @@ Now we want to find the Hilbert basis of the cone corresponding to solutions of 
 Important: The Hilbert basis H may be very large! There could be hundreds of thousands of vectors in H. Thus these operations need to be very efficient. 
 
 We optionally save the polymer basis into a user-friendly text file. If the command line option `--user-friendly-polymer-basis` is given to out CLI tool `tbnexplorer2`, it should do the following: 
-Assuming we are given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.tbnpolys`. This file should represent the polymers in the polymer basis in the user-friendly way as described below in the section on .tbnpolys files. 
+Assuming we are given `<example>.tbn` as input, it should create a file called `<example>-polymer-basis.tbnpolys`. This file should represent the polymers in the polymer basis in the user-friendly way as described below in the section on .tbnpolys files. Each polymer should start with a comment line like "# Polymer 3" to indicate that this is the 3rd polymer.
 
 The CLI tool should return to the command line the number of polymers in the polymer basis.
 
@@ -166,7 +166,9 @@ Sometimes even with the filtering criteria, there are still too many polymers.
 
 First, we can limit the maximum number of polymers output with the optional `--num` parameter (short `-n`). This defaults to 100 if not explicitly specified.
 
-Second, we add an optional command line argument `--percent-limit p` (short `-p`) where p is a percent number (real-value). 
+Second, we add an optional command line argument `--min-concentration {conc}` where {conc} is a real non-negative number specifying the lower-bound on the concentration (in same units as \UNITS). 
+
+Third, we add an optional command line argument `--percent-limit p` (short `-p`) where p is a percent number (real-value). 
 The output should be restricted to those polymers whose concentration is above (p/100) fraction of the _total concentration_ of all polymers in the .tbnpolymat file. 
 
 ## Advanced filtering with constraints file
