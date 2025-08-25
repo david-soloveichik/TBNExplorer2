@@ -236,6 +236,63 @@ monomer3
         assert polymers[0][1] == (2, "monomer2")
         assert polymers[1][0] == (1, "monomer3")
 
+    def test_parse_monomer_with_name_syntax(self):
+        """Test parsing monomers with name: binding_sites syntax (without TBN context)."""
+        content = """# Test polymer with named monomers
+output1: a b*
+2 | output2: c c*
+d d*
+"""
+        parser = TbnpolysParser()
+        polymers = parser.parse_content(content)
+
+        assert len(polymers) == 1
+        assert len(polymers[0]) == 3
+        # Without TBN context, the full spec including name is preserved
+        assert polymers[0][0] == (1, "output1: a b*")
+        assert polymers[0][1] == (2, "output2: c c*")
+        assert polymers[0][2] == (1, "d d*")
+
+    def test_resolve_monomer_with_name_syntax_matching(self):
+        """Test resolving monomers with name: binding_sites syntax that matches TBN."""
+        tbn = create_test_tbn()
+        content = """# Test polymer with named monomers
+monomer1: a a* b
+2 | C: c c
+b c*
+"""
+        parser = TbnpolysParser(tbn)
+        polymers = parser.parse_content(content)
+
+        assert len(polymers) == 1
+        assert len(polymers[0]) == 3
+        # Should resolve to actual Monomer objects
+        assert polymers[0][0] == (1, tbn.monomers[0])  # monomer1 with matching sites
+        assert polymers[0][1] == (2, tbn.monomers[2])  # C with matching sites
+        assert polymers[0][2] == (1, tbn.monomers[1])  # b c*
+
+    def test_resolve_monomer_with_name_syntax_mismatch(self):
+        """Test that mismatched binding sites raise an error."""
+        tbn = create_test_tbn()
+        content = """# Test polymer with wrong binding sites
+monomer1: a b c
+"""
+        parser = TbnpolysParser(tbn)
+
+        with pytest.raises(ValueError, match="binding sites don't match"):
+            parser.parse_content(content)
+
+    def test_resolve_monomer_with_unknown_name(self):
+        """Test that unknown monomer names raise an error."""
+        tbn = create_test_tbn()
+        content = """# Test polymer with unknown name
+unknown_name: a b
+"""
+        parser = TbnpolysParser(tbn)
+
+        with pytest.raises(ValueError, match="Monomer with name 'unknown_name' not found"):
+            parser.parse_content(content)
+
     def test_parse_empty_content(self):
         """Test parsing empty content."""
         parser = TbnpolysParser()

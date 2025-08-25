@@ -91,7 +91,8 @@ class NormalizRunner:
             result = subprocess.run([self.normaliz_path, input_file], capture_output=True, text=True, check=False)
 
             if result.returncode != 0:
-                raise RuntimeError(f"Normaliz failed: {result.stderr}")
+                error_msg = result.stderr if result.stderr else result.stdout
+                raise RuntimeError(f"Normaliz failed with return code {result.returncode}: {error_msg}")
 
             # Normaliz creates output file with .out extension
             output_file = input_file.rsplit(".", 1)[0] + ".out"

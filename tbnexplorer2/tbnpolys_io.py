@@ -112,18 +112,47 @@ class TbnpolysParser:
         """Resolve a monomer specification to a Monomer object.
 
         Args:
-            monomer_spec: Either a monomer name or binding site representation
+            monomer_spec: Either a monomer name, binding site representation,
+                         or "name: binding_sites" format
 
         Returns:
             Monomer object
 
         Raises:
-            ValueError: If monomer cannot be resolved
+            ValueError: If monomer cannot be resolved or if name and binding sites don't match
         """
         if not self.tbn:
             raise ValueError("TBN context required to resolve monomers")
 
-        # First check if it's a monomer name
+        # Check if monomer_spec has name: binding_sites syntax
+        if ":" in monomer_spec:
+            parts = monomer_spec.split(":", 1)
+            if len(parts) == 2:
+                name = parts[0].strip()
+                binding_sites_str = parts[1].strip()
+
+                # Try to find monomer by name
+                for monomer in self.tbn.monomers:
+                    if monomer.name == name:
+                        # Verify that binding sites match
+                        provided_sites = sorted(binding_sites_str.split())
+                        monomer_sites = []
+                        for site in monomer.binding_sites:
+                            monomer_sites.append(site.name + ("*" if site.is_star else ""))
+                        monomer_sites = sorted(monomer_sites)
+
+                        if provided_sites != monomer_sites:
+                            raise ValueError(
+                                f"Monomer '{name}' exists but binding sites don't match. "
+                                f"Expected: {' '.join(monomer_sites)}, "
+                                f"Got: {' '.join(provided_sites)}"
+                            )
+                        return monomer
+
+                # Name not found, raise error
+                raise ValueError(f"Monomer with name '{name}' not found in TBN file")
+
+        # First check if it's a monomer name (without colon syntax)
         for monomer in self.tbn.monomers:
             if monomer.name == monomer_spec:
                 return monomer
