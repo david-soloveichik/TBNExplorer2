@@ -458,12 +458,17 @@ This ensures the mathematical consistency of the concentration exponent assignme
 - Without `\UNITS`: NO monomers should have concentrations
 - Use `--no-concentrations` to skip equilibrium calculations
 
+## Contact
+
+David Soloveichik
+The University of Texas at Austin
+Email: david [dot] soloveichik [at] utexas.edu
 
 ## License
 
 MIT License
 
-Copyright (c) 2024 TBN Explorer Contributors
+Copyright (c) 2025 David Soloveichik
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
