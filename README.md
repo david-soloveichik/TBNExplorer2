@@ -17,6 +17,12 @@ Given a set of monomers (described by their binding sites) and their initial con
 2. The **free energies** of each polymer equal to the number of bonds
 3. The **equilibrium concentrations** of all polymers in the system
 
+### Extensions
+
+TBN Explorer also includes advanced extensions for:
+- **Canonical Reactions Analysis**: Identifying irreducible reactions between on-target and off-target polymers
+- **IBOT Algorithm**: Computing concentration exponents for maintaining detailed balance in polymer networks
+
 
 
 ## Installation
@@ -91,6 +97,7 @@ tbnexplorer2-filter input.tbn [monomer1] [monomer2] ... [options]
 Options:
   -n, --num N                Maximum number of polymers to output (default: 100)
   -p, --percent-limit P      Only show polymers above P% of total concentration
+  --min-concentration CONC   Minimum concentration threshold
   --constraints-file FILE    Advanced filtering with constraint specifications
 ```
 
@@ -99,6 +106,35 @@ Options:
 CONTAINS monomer1 monomer2    # Polymers containing these monomers
 EXACTLY monomer1 monomer2     # Polymers with exactly these monomers
 ```
+
+### tbnexplorer2-ibot - Iterative Balancing of Off-Target Polymers
+
+Analyzes canonical reactions and assigns concentration exponents to off-target polymers using the IBOT algorithm.
+
+```bash
+tbnexplorer2-ibot input.tbn on_target.tbnpolys [options]
+
+Options:
+  --normaliz-path PATH              Path to Normaliz executable
+  --use-4ti2                        Use 4ti2 instead of Normaliz
+  --4ti2-path PATH                  Path to 4ti2 installation directory
+  --generate-tbn CONC UNITS         Generate .tbn file with computed concentrations
+                                    (e.g., --generate-tbn 0.01 nM)
+  -v, --verbose                     Enable verbose output
+```
+
+**Purpose:**
+- Identifies irreducible canonical reactions between on-target and off-target polymers
+- Assigns concentration exponents to off-target polymers maintaining detailed balance
+- Generates concentration specifications for all polymers
+
+**Inputs:**
+- `input.tbn`: TBN file without concentrations (no \\UNITS)
+- `on_target.tbnpolys`: File specifying which polymers are considered "on-target"
+
+**Outputs:**
+- `input-ibot-output.tbnpolys`: All polymers with concentration exponents (μ values)
+- `input-ibot-cX.tbn`: Generated TBN file with concentrations (if --generate-tbn used)
 
 ## TBN File Format (.tbn)
 
@@ -207,6 +243,77 @@ Human-readable format showing polymer composition:
 3 | propagator
 ```
 
+## Extensions
+
+TBN Explorer includes advanced analysis tools for studying reaction networks and polymer dynamics.
+
+### Canonical Reactions Analysis
+
+The canonical reactions module identifies and analyzes irreducible reactions that generate off-target polymers from on-target ones.
+
+**Key Concepts:**
+- **On-target polymers**: Desired polymer configurations specified in a .tbnpolys file
+- **Off-target polymers**: All other polymers in the polymer basis
+- **Canonical reactions**: Reactions that create off-target polymers from purely on-target reactants
+- **Irreducible canonical reactions**: Fundamental reactions that cannot be decomposed into simpler ones
+
+### IBOT Algorithm (Iterative Balancing of Off-Target Polymers)
+
+The IBOT algorithm assigns concentration exponents to polymers to maintain detailed balance in the system.
+
+**Algorithm Overview:**
+1. All on-target polymers are assigned concentration exponent μ = 1
+2. Iteratively assigns concentration exponents to off-target polymers based on:
+   - **Novelty**: Number of unassigned off-target polymers in a reaction
+   - **Imbalance**: Difference in concentration exponents between reactants and products
+   - **Imbalance-novelty ratio**: Used to determine assignment priority
+3. Polymers unreachable from on-target reactions are excluded
+
+**Example Workflow:**
+```bash
+# 1. Compute polymer basis from TBN without concentrations
+tbnexplorer2 system.tbn --user-friendly-polymer-basis
+
+# 2. Create on_target.tbnpolys file specifying desired polymers
+# (manually or programmatically select from polymer basis)
+
+# 3. Run IBOT analysis
+tbnexplorer2-ibot system.tbn on_target.tbnpolys --verbose
+
+# 4. Generate TBN with computed concentrations
+tbnexplorer2-ibot system.tbn on_target.tbnpolys --generate-tbn 0.01 nM
+
+# 5. Verify equilibrium with generated concentrations
+tbnexplorer2 system-ibot-c0.01.tbn
+
+# 6. Filter and view results
+tbnexplorer2-filter system-ibot-c0.01.tbn -n 50
+```
+
+### .tbnpolys File Format
+
+Polymer specification files for defining on-target polymers and viewing results.
+
+**Format:**
+```
+# Comment describing polymer
+2 | monomer_name     # 2 copies of named monomer
+1 | a b c            # 1 copy of monomer with sites a, b, c
+                     # Empty line separates polymers
+# Next polymer
+1 | monomer2
+3 | d e f
+
+# Concentration exponents (in IBOT output)
+μ: 1.5
+```
+
+**Key Rules:**
+- Empty lines (not comments) separate different polymers
+- Multiplicity prefix `n |` indicates n copies of the monomer
+- Monomers can be specified by name or binding site list
+- μ values appear in IBOT output files
+
 ## Python API
 
 Use TBN Explorer as a Python library:
@@ -245,6 +352,33 @@ if tbn.has_concentrations:
     )
 ```
 
+### Extensions API
+
+```python
+from extensions import CanonicalReactionsComputer, IBOTAlgorithm
+from tbnexplorer2 import TBNPolysParser
+
+# Load on-target polymers
+on_target_polymers = TBNPolysParser.parse_file("on_target.tbnpolys", tbn)
+
+# Compute irreducible canonical reactions
+reactions_computer = CanonicalReactionsComputer(tbn, polymer_basis)
+irreducible_reactions = reactions_computer.compute_irreducible_canonical_reactions(
+    on_target_polymers
+)
+
+# Run IBOT algorithm
+ibot = IBOTAlgorithm(tbn, polymer_basis, irreducible_reactions)
+concentration_exponents = ibot.compute_concentration_exponents(on_target_polymers)
+
+# Generate monomer concentrations
+monomer_concentrations = ibot.generate_monomer_concentrations(
+    concentration_exponents, 
+    base_concentration=0.01,  # in Molar
+    units="nM"
+)
+```
+
 ## Performance Considerations
 
 ### Caching
@@ -272,10 +406,23 @@ pytest tests/ -v
 # Run specific test
 pytest tests/test_parser.py::TestTBNParser::test_units_parsing
 
+# Test IBOT pipeline end-to-end
+python extensions/test_ibot_pipeline.py
+
 # Check code quality
 ruff check .
 ruff format .
 ```
+
+### Testing the IBOT Pipeline
+
+The `test_ibot_pipeline.py` script validates the complete IBOT workflow:
+1. Generates concentration exponents using IBOT algorithm
+2. Creates a TBN file with computed concentrations
+3. Runs equilibrium calculation with tbnexplorer2
+4. Verifies that equilibrium concentrations match expected values
+
+This ensures the mathematical consistency of the concentration exponent assignments.
 
 ## Troubleshooting
 
