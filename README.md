@@ -13,13 +13,13 @@ The TBN (Thermodynamics of Binding Networks) model is a framework for studying a
 Enthalpy is assumed to be infinitely preferred over entropy and the system must be "star-binding site limiting". Please see [1,2] for details of the TBN model.
 
 Given a set of monomers (described by their binding sites) and their initial concentrations, TBN Explorer computes:
-1. The **polymer basis** - the set of fundamental "unsplittable" polymers [3]
+1. The **polymer basis** - the set of "unsplittable" polymers [3]
 2. The **free energies** of each polymer equal to the number of bonds
 3. The **equilibrium concentrations** of all polymers in the system [4]
 
 ### Extensions
 
-TBN Explorer also includes an extension for implementing the algorithm from [5] for computing off-target polymer concentration using iterative detailed balancing, here called the **IBOT Algorithm** (Iterative Balancing of Off-Target Polymers").
+TBN Explorer also includes an extension for implementing the algorithm from [5] for computing off-target polymer concentration using iterative detailed balancing, here called the **IBOT Algorithm** (Iterative Balancing of Off-Target Polymers).
 
 ### References
 [1] David Doty, Trent A. Rogers, David Soloveichik, Chris Thachuk, Damien Woods, "Thermodynamic binding networks," DNA23, 2017.
@@ -93,7 +93,7 @@ Options:
 
 **Outputs:**
 - `input.tbnpolymat` - Matrix file with polymer compositions, free energies, and concentrations
-- `input-polymer-basis.txt` - Human-readable polymer basis (with `--user-friendly-polymer-basis`)
+- `input-polymer-basis.tbnpolys` - Human-readable polymer basis (with `--user-friendly-polymer-basis`)
 
 ### tbnexplorer2-filter - Polymer Filtering Tool
 
@@ -117,7 +117,7 @@ EXACTLY monomer1 monomer2     # Polymers with exactly these monomers
 
 ### tbnexplorer2-ibot - Iterative Balancing of Off-Target Polymers
 
-Analyzes canonical reactions and assigns concentration exponents to off-target polymers using the IBOT algorithm.
+Analyzes canonical reactions and assigns concentration exponents to off-target polymers using the IBOT algorithm [5].
 
 ```bash
 tbnexplorer2-ibot input.tbn on_target.tbnpolys [options]
@@ -254,8 +254,6 @@ Note: when the multiplicity prefix "{n} |" is missing, the multiplicity is assum
 
 ## Extensions
 
-TBN Explorer includes advanced analysis tools for studying reaction networks and polymer dynamics.
-
 ### Canonical Reactions Analysis
 
 The canonical reactions module identifies and analyzes irreducible reactions that generate off-target polymers from on-target ones.
@@ -268,7 +266,7 @@ The canonical reactions module identifies and analyzes irreducible reactions tha
 
 ### IBOT Algorithm (Iterative Balancing of Off-Target Polymers)
 
-The IBOT algorithm assigns concentration exponents to polymers to maintain detailed balance in the system.
+The IBOT algorithm assigns concentration exponents to polymers to maintain detailed balance in the system. The algorithm is developed in [5].
 
 **Algorithm Overview:**
 1. All on-target polymers are assigned concentration exponent μ = 1
