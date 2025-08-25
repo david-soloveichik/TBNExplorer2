@@ -29,7 +29,9 @@ def main():
 
     # Optional arguments
     parser.add_argument(
-        "--use-4ti2", action="store_true", help="Use 4ti2 instead of Normaliz for Hilbert basis computation"
+        "--use-4ti2",
+        action="store_true",
+        help="Use 4ti2 instead of Normaliz for both Hilbert basis computations (polymer basis and irreducible canonical reactions)",
     )
     parser.add_argument(
         "--generate-tbn",

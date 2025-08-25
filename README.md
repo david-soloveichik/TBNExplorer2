@@ -127,7 +127,7 @@ tbnexplorer2-ibot input.tbn on_target.tbnpolys [options]
 
 Options:
   --normaliz-path PATH              Path to Normaliz executable
-  --use-4ti2                        Use 4ti2 instead of Normaliz
+  --use-4ti2                        Use 4ti2 instead of Normaliz for both Hilbert basis computations
   --4ti2-path PATH                  Path to 4ti2 installation directory
   --generate-tbn CONC UNITS         Generate .tbn file with computed concentrations
                                     (e.g., --generate-tbn 0.01 nM)
