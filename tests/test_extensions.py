@@ -213,7 +213,7 @@ class TestIBOTAlgorithm:
             content = output_path.read_text()
             assert "ON-TARGET POLYMERS" in content
             assert "OFF-TARGET POLYMERS" in content
-            assert "μ:" in content
+            assert "# μ:" in content
         finally:
             output_path.unlink()
 

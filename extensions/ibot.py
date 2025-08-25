@@ -225,7 +225,7 @@ class IBOTAlgorithm:
             List of lines representing the polymer
         """
         lines = writer._format_single_polymer(polymer)
-        lines.append(f"μ: {mu_val:.6f}")
+        lines.append(f"# μ: {mu_val:.6f}")
         return lines
 
     def generate_tbn_output(self, output_file: Path, c: float, units: str):

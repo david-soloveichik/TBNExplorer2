@@ -35,18 +35,8 @@ def parse_concentration_exponents(tbnpolys_file: Path) -> Dict[str, float]:
         for line in f:
             line = line.strip()
 
-            # Skip comments and empty lines
-            if line.startswith("#") or not line:
-                # If we have a polymer buffered, save it
-                if current_polymer_lines and current_mu is not None:
-                    polymer_key = "\n".join(current_polymer_lines)
-                    exponents[polymer_key] = current_mu
-                    current_polymer_lines = []
-                    current_mu = None
-                continue
-
-            # Check for μ line
-            if line.startswith("μ:"):
+            # Check for μ line first (now with comment marker)
+            if line.startswith("# μ:"):
                 current_mu = float(line.split(":")[1].strip())
                 # Save the polymer
                 if current_polymer_lines:
@@ -54,6 +44,15 @@ def parse_concentration_exponents(tbnpolys_file: Path) -> Dict[str, float]:
                     exponents[polymer_key] = current_mu
                     current_polymer_lines = []
                     current_mu = None
+            # Skip other comments and empty lines
+            elif line.startswith("#") or not line:
+                # If we have a polymer buffered, save it
+                if current_polymer_lines and current_mu is not None:
+                    polymer_key = "\n".join(current_polymer_lines)
+                    exponents[polymer_key] = current_mu
+                    current_polymer_lines = []
+                    current_mu = None
+                continue
             else:
                 # This is a monomer line
                 current_polymer_lines.append(line)
