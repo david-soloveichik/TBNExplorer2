@@ -13,6 +13,7 @@ The TBN (Thermodynamics of Binding Networks) model is a framework for studying a
 Enthalpy is assumed to be infinitely preferred over entropy and the system must be "star-binding site limiting". Please see [1,2] for details of the TBN model.
 
 Given a set of monomers (described by their binding sites) and their initial concentrations, TBN Explorer computes:
+
 1. The **polymer basis** - the set of "unsplittable" polymers [3]
 2. The **free energies** of each polymer equal to the number of bonds
 3. The **equilibrium concentrations** of all polymers in the system [4]
@@ -22,16 +23,16 @@ Given a set of monomers (described by their binding sites) and their initial con
 TBN Explorer also includes an extension for implementing the algorithm from [5] for computing off-target polymer concentration using iterative detailed balancing, here called the **IBOT Algorithm** (Iterative Balancing of Off-Target Polymers).
 
 ### References
+
 [1] David Doty, Trent A. Rogers, David Soloveichik, Chris Thachuk, Damien Woods, "Thermodynamic binding networks," DNA23, 2017.
 
 [2] Keenan Breik, Chris Thachuk, Marijn Heule, David Soloveichik, "Computing properties of stable configurations of thermodynamic binding networks," Theoretical Computer Science 785, 17-29, 2019.
 
 [3] David Haley, David Doty, "Computing properties of thermodynamic binding networks: An integer programming approach," DNA27, 2021.
 
-[4] https://coffeesolver.dev/
+[4] <https://coffeesolver.dev/>
 
 [5] Hamidreza Akef, Minki Hhan, David Soloveichik, "Computing and Bounding Equilibrium Concentrations in Athermic Chemical Systems," DNA31, 2025.
-
 
 ## Installation
 
@@ -42,14 +43,14 @@ TBN Explorer also includes an extension for implementing the algorithm from [5] 
    - numpy, scipy - Numerical computations
    - simpleeval - Safe expression evaluation for parametrized .tbn files
 3. **Normaliz** - Tool for computing Hilbert bases and discrete convex geometry
-   - Download from: https://github.com/Normaliz/Normaliz
+   - Download from: <https://github.com/Normaliz/Normaliz>
    - Configure path via `NORMALIZ_PATH` environment variable or `.env` file
    - You can also specify a custom path using the `--normaliz-path` option
 4. **COFFEE** - Tool for computing chemical equilibrium concentrations
    - Configure path via `COFFEE_CLI_PATH` environment variable or `.env` file
    - Required for equilibrium concentration calculations
 5. **4ti2** (optional) - Alternative tool for computing Hilbert bases
-   - Download from: https://4ti2.github.io/
+   - Download from: <https://4ti2.github.io/>
    - Configure path via `FOURTI2_PATH` environment variable or `.env` file
    - Use with `--use-4ti2` flag as an alternative to Normaliz
 
@@ -92,6 +93,7 @@ Options:
 ```
 
 **Outputs:**
+
 - `input.tbnpolymat` - Matrix file with polymer compositions, free energies, and concentrations
 - `input-polymer-basis.tbnpolys` - Human-readable polymer basis (with `--user-friendly-polymer-basis`)
 
@@ -110,7 +112,8 @@ Options:
 ```
 
 **Constraint File Format:**
-```
+
+```text
 CONTAINS monomer1 monomer2    # Polymers containing these monomers
 EXACTLY monomer1 monomer2     # Polymers with exactly these monomers
 ```
@@ -132,15 +135,18 @@ Options:
 ```
 
 **Purpose:**
+
 - Identifies irreducible canonical reactions between on-target and off-target polymers
 - Assigns concentration exponents to off-target polymers maintaining detailed balance
 - Generates concentration specifications for all polymers
 
 **Inputs:**
+
 - `input.tbn`: TBN file without concentrations (no \UNITS)
 - `on_target.tbnpolys`: File specifying which polymers are considered "on-target"
 
 **Outputs:**
+
 - `input-ibot-output.tbnpolys`: All polymers with concentration exponents (μ values)
 - `input-ibot-cX.tbn`: Generated TBN file with concentrations (if --generate-tbn used)
 
@@ -150,7 +156,7 @@ TBN files describe monomers as collections of binding sites with optional concen
 
 ### Basic Syntax
 
-```
+```text
 # Comments start with #
 \UNITS: nM                         # Concentration units (nM, pM, uM, mM, M)
 
@@ -170,14 +176,15 @@ site1 site2 site3                      # Unnamed monomer (no concentration witho
 
 1. **Units Consistency**: With `\UNITS` keyword, ALL monomers must have concentrations. Without it, NO monomers can have concentrations.
 2. **Star-limiting Restriction**: For each binding site type, total unstar count ≥ total star count across all monomers
-3. **Duplicate Monomers**: 
+3. **Duplicate Monomers**:  
    - Without UNITS: Treated independently
    - With UNITS: Concentrations are summed (must have same name or one named)
 
 ### Example TBN Files
 
 **Simple system without concentrations:**
-```
+
+```text
 # Simple binding network
 A: a b c
 B: a* b* c*
@@ -186,7 +193,8 @@ complement: d* d* e*
 ```
 
 **System with concentrations:**
-```
+
+```text
 \UNITS: nM
 initiator: a b, 100
 propagator: a* b c, 50
@@ -198,7 +206,7 @@ cap: d*, 25.5
 
 TBN files support template variables and arithmetic expressions for flexible concentration specifications:
 
-```
+```text
 \UNITS: nM
 # Simple variable substitution
 monomer1: a b, {{conc1}}
@@ -213,11 +221,13 @@ fixed: i j, 100
 ```
 
 **Running with parameters:**
+
 ```bash
 tbnexplorer2 input.tbn --parametrized conc1=50 conc2=100 base_conc=75 scale_factor=2
 ```
 
 **Supported operations in templates:**
+
 - Basic arithmetic: `+`, `-`, `*`, `/`
 - Exponentiation: `**` (e.g., `{{2 ** 3}}` evaluates to 8)
 - Parentheses for grouping: `{{(a + b) * c}}`
@@ -228,7 +238,8 @@ tbnexplorer2 input.tbn --parametrized conc1=50 conc2=100 base_conc=75 scale_fact
 ### .tbnpolymat File
 
 Matrix format with polymers sorted by concentration:
-```
+
+```text
 # Header with metadata
 \MATRIX-HASH: [hash]
 \UNITS: nM
@@ -241,7 +252,8 @@ Matrix format with polymers sorted by concentration:
 ### User-Friendly Polymer Basis
 
 Human-readable format showing polymer composition:
-```
+
+```text
 # Polymer 1
 2 | monomer_name
 1 | a b c
@@ -250,6 +262,7 @@ Human-readable format showing polymer composition:
 initiator
 3 | propagator
 ```
+
 Note: when the multiplicity prefix "{n} |" is missing, the multiplicity is assumed to be 1.
 
 ## Extensions
@@ -259,6 +272,7 @@ Note: when the multiplicity prefix "{n} |" is missing, the multiplicity is assum
 The canonical reactions module identifies and analyzes irreducible reactions that generate off-target polymers from on-target ones.
 
 **Key Concepts:**
+
 - **On-target polymers**: Desired polymer configurations specified in a .tbnpolys file
 - **Off-target polymers**: All other polymers in the polymer basis
 - **Canonical reactions**: Reactions that create off-target polymers from purely on-target reactants
@@ -269,6 +283,7 @@ The canonical reactions module identifies and analyzes irreducible reactions tha
 The IBOT algorithm assigns concentration exponents to polymers to maintain detailed balance in the system. The algorithm is developed in [5].
 
 **Algorithm Overview:**
+
 1. All on-target polymers are assigned concentration exponent μ = 1
 2. Iteratively assigns concentration exponents to off-target polymers based on:
    - **Novelty**: Number of unassigned off-target polymers in a reaction
@@ -277,6 +292,7 @@ The IBOT algorithm assigns concentration exponents to polymers to maintain detai
 3. Polymers unreachable from on-target reactions are excluded
 
 **Example Workflow:**
+
 ```bash
 # 1. Compute polymer basis from TBN without concentrations
 tbnexplorer2 system.tbn --user-friendly-polymer-basis
@@ -302,7 +318,8 @@ tbnexplorer2-filter system-ibot-c0.01.tbn -n 50
 Polymer specification files for defining on-target polymers and viewing results.
 
 **Format:**
-```
+
+```text
 # Comment describing polymer
 2 | monomer_name     # 2 copies of named monomer
 1 | a b c            # 1 copy of monomer with sites a, b, c
@@ -316,6 +333,7 @@ Polymer specification files for defining on-target polymers and viewing results.
 ```
 
 **Key Rules:**
+
 - Empty lines (not comments) separate different polymers
 - Multiplicity prefix `n |` indicates n copies of the monomer
 - Monomers can be specified by name or binding site list
@@ -395,6 +413,7 @@ The polymer basis computation (most expensive operation) is cached based on the 
 ### Large Systems
 
 TBN Explorer is designed to handle:
+
 - Polymer bases with hundreds of thousands of polymers
 - Efficient matrix operations using NumPy
 - Streaming I/O for large output files
@@ -424,6 +443,7 @@ ruff format .
 ### Testing the IBOT Pipeline
 
 The `test_ibot_pipeline.py` script validates the complete IBOT workflow:
+
 1. Generates concentration exponents using IBOT algorithm
 2. Creates a TBN file with computed concentrations
 3. Runs equilibrium calculation with tbnexplorer2
@@ -435,7 +455,7 @@ This ensures the mathematical consistency of the concentration exponent assignme
 
 ### "Normaliz not found" Error
 
-1. Install Normaliz from https://github.com/Normaliz/Normaliz
+1. Install Normaliz from <https://github.com/Normaliz/Normaliz>
 2. Either:
    - Set `NORMALIZ_PATH` in your `.env` file
    - Use `--normaliz-path` to specify location
@@ -460,14 +480,13 @@ This ensures the mathematical consistency of the concentration exponent assignme
 
 ## Contact
 
-David Soloveichik
-The University of Texas at Austin
+David Soloveichik  
+The University of Texas at Austin  
 Email: david [dot] soloveichik [at] utexas.edu
 
 ## License
 
 MIT License
-
 Copyright (c) 2025 David Soloveichik
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
