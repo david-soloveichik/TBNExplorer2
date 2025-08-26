@@ -42,6 +42,11 @@ def main():
     parser.add_argument(
         "--output-prefix", type=str, help="Prefix for output files (default: input filename without extension)"
     )
+    parser.add_argument(
+        "--output-canonical-reactions",
+        action="store_true",
+        help="Generate text file showing all irreducible canonical reactions ordered by IBOT iteration",
+    )
 
     args = parser.parse_args()
 
@@ -125,6 +130,12 @@ def main():
         output_tbnpolys = Path(f"{output_prefix}-ibot.tbnpolys")
         print(f"\nGenerating output .tbnpolys file: {output_tbnpolys}")
         ibot.generate_tbnpolys_output(output_tbnpolys)
+
+        # Generate reactions output file if requested
+        if args.output_canonical_reactions:
+            output_reactions = Path(f"{output_prefix}-ibot-reactions.txt")
+            print(f"\nGenerating canonical reactions output file: {output_reactions}")
+            ibot.generate_reactions_output(output_reactions)
 
         # Generate .tbn file if requested
         if args.generate_tbn:

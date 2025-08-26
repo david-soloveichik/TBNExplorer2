@@ -26,6 +26,16 @@ class ReactionMetrics:
     ratio: float  # imbalance/novelty ratio
 
 
+@dataclass
+class IterationInfo:
+    """Information about a single IBOT iteration."""
+
+    iteration: int
+    mu_min: float
+    reactions: List[Reaction]  # Reactions that were part of R in this iteration
+    assigned_polymers: Set[int]  # Polymer indices assigned in this iteration
+
+
 class IBOTAlgorithm:
     """Implementation of the Iterative Balancing of Off-Target algorithm."""
 
@@ -53,6 +63,9 @@ class IBOTAlgorithm:
 
         # Track which off-target polymers have been assigned
         self.unassigned_off_target = self.off_target_indices.copy()
+
+        # Track iteration information for reactions output
+        self.iteration_info = []
 
     def compute_reaction_metrics(self, reaction: Reaction) -> ReactionMetrics:
         """
@@ -121,6 +134,15 @@ class IBOTAlgorithm:
                 for i, count in enumerate(reaction.vector):
                     if count != 0 and i in self.unassigned_off_target:
                         polymers_to_assign.add(i)
+
+            # Store iteration information
+            iter_info = IterationInfo(
+                iteration=iteration,
+                mu_min=min_ratio,
+                reactions=min_reactions.copy(),
+                assigned_polymers=polymers_to_assign.copy(),
+            )
+            self.iteration_info.append(iter_info)
 
             # Assign concentration exponent to these polymers
             for p in polymers_to_assign:
@@ -211,6 +233,118 @@ class IBOTAlgorithm:
             f.write("\n".join(lines))
 
         print(f"Saved IBOT results to {output_file}")
+
+    def generate_reactions_output(self, output_file: Path):
+        """
+        Generate text file showing irreducible canonical reactions.
+
+        Reactions are ordered by the iteration of the IBOT algorithm in which they
+        were part of R. The μ_min value and polymers assigned in each iteration are indicated.
+
+        Args:
+            output_file: Path to output text file
+        """
+        lines = []
+
+        # Header
+        lines.append("# Irreducible Canonical Reactions from IBOT Algorithm")
+        lines.append(f"# Total reactions: {len(self.reactions)}")
+        lines.append(f"# Total iterations: {len(self.iteration_info)}")
+        lines.append("#")
+        lines.append("# Notation:")
+        lines.append("#   - Polymers are shown in brackets: {monomer1; monomer2; ...}")
+        lines.append("#   - Monomer multiplicities shown as prefix: {2 monomer1; monomer2}")
+        lines.append("#   - Polymers marked with ^ were assigned μ in that iteration")
+        lines.append("=" * 80)
+        lines.append("")
+
+        # Process each iteration
+        for iter_info in self.iteration_info:
+            lines.append(f"## Iteration {iter_info.iteration}")
+            lines.append(f"## μ_min = {iter_info.mu_min:.6f}")
+            lines.append(f"## Number of reactions in R: {len(iter_info.reactions)}")
+            lines.append(f"## Polymers assigned μ in this iteration: {len(iter_info.assigned_polymers)}")
+            lines.append("")
+
+            # Format each reaction in this iteration
+            for reaction in iter_info.reactions:
+                reaction_str = self._format_reaction_with_assignments(reaction, iter_info.assigned_polymers)
+                lines.append(reaction_str)
+
+            lines.append("")
+            lines.append("-" * 40)
+            lines.append("")
+
+        # Remove trailing separators
+        while lines and lines[-1] in ["", "-" * 40]:
+            lines.pop()
+
+        # Write to file
+        with open(output_file, "w") as f:
+            f.write("\n".join(lines))
+
+        print(f"Saved canonical reactions output to {output_file}")
+
+    def _format_reaction_with_assignments(self, reaction: Reaction, assigned_polymers: Set[int]) -> str:
+        """
+        Format a reaction with indicators for newly assigned polymers.
+
+        Args:
+            reaction: The reaction to format
+            assigned_polymers: Set of polymer indices assigned in this iteration
+
+        Returns:
+            Formatted reaction string
+        """
+        reactants, products = reaction.get_reactants_and_products()
+
+        def format_side(polymers):
+            terms = []
+            for idx, mult in polymers:
+                # Create polymer representation
+                polymer_str = self._get_polymer_representation(idx)
+
+                # Mark if this polymer was assigned in this iteration
+                if idx in assigned_polymers:
+                    polymer_str += "^"  # Mark with caret to indicate newly assigned μ
+
+                if mult == 1:
+                    terms.append(polymer_str)
+                else:
+                    terms.append(f"{mult} {polymer_str}")
+            return " + ".join(terms) if terms else "0"
+
+        return f"{format_side(reactants)} -> {format_side(products)}"
+
+    def _get_polymer_representation(self, polymer_idx: int) -> str:
+        """
+        Get a string representation of a polymer in .tbnpolys notation.
+
+        Args:
+            polymer_idx: Index of the polymer
+
+        Returns:
+            String representation in format {monomer1; monomer2; ...}
+        """
+        polymer = self.polymers[polymer_idx]
+
+        # Collect all monomers in the polymer
+        monomer_specs = []
+        for monomer_idx, count in enumerate(polymer):
+            if count > 0:
+                monomer = self.tbn.monomers[monomer_idx]
+
+                # Get monomer representation (name or binding sites)
+                monomer_spec = monomer.name or monomer.get_binding_sites_str()
+
+                # Add multiplicity prefix if count > 1
+                if count > 1:
+                    monomer_spec = f"{count} {monomer_spec}"
+
+                monomer_specs.append(monomer_spec)
+
+        # Join with semicolons and wrap in brackets
+        return "{" + "; ".join(monomer_specs) + "}"
 
     def _format_polymer_with_mu(self, polymer: np.ndarray, mu_val: float, writer: TbnpolysWriter) -> List[str]:
         """

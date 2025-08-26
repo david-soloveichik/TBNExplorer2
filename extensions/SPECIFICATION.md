@@ -78,6 +78,10 @@ After finishing the iterations, any remaining polymers p with `μ(p) = 0` (i.e.,
 
 Important: this algorithm must be implemented very efficiently since there might be hundreds of thousands of irreducible canonical reactions and hundreds of thousands of polymers.
 
+## Output text file showing irreducible canonical reactions
+If an optional command line argument `--output-canonical-reactions` is given:  
+Output a .txt file showing all irreducible canonical reactions. They should be ordered by the iteration of the IBOT algorithm in which they were part of R. The μ_min should be recorded. Also the polymers that get assigned `μ(p) = μ_min` should be indicated somehow in the reaction in a compact way.
+
 ## Output .tbnpolys file
 Generate a .tbnpolys file containing all polymers in the polymer basis (i.e., on-target and off-target). For each, indicate its concentration exponent as `μ: {value}` on a separate line following the polymer.
 
