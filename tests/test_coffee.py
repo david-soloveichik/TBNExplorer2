@@ -53,8 +53,9 @@ class TestCOFFEERunner:
         tbn.concentrations = np.array([1.0, 2.0])
         polymers = []
 
-        with patch.object(runner, "check_coffee_available", return_value=False), pytest.raises(RuntimeError, match="COFFEE not found"):
-            runner.compute_equilibrium_concentrations(polymers, tbn)
+        with patch.object(runner, "check_coffee_available", return_value=False):
+            with pytest.raises(RuntimeError, match="COFFEE not found"):
+                runner.compute_equilibrium_concentrations(polymers, tbn)
 
     def test_write_cfe_file(self):
         """Test _write_cfe_file method."""
@@ -198,5 +199,6 @@ class TestCOFFEERunner:
 
         with patch.object(runner, "check_coffee_available", return_value=True), patch(
             "tbnexplorer2.coffee.subprocess.run", return_value=mock_result
-        ), pytest.raises(RuntimeError, match="COFFEE failed"):
-            runner.compute_equilibrium_concentrations(polymers, tbn)
+        ):
+            with pytest.raises(RuntimeError, match="COFFEE failed"):
+                runner.compute_equilibrium_concentrations(polymers, tbn)

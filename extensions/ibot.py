@@ -6,7 +6,7 @@ to off-target polymers such that they are in detailed balance.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 
 import numpy as np
 
@@ -39,14 +39,7 @@ class IterationInfo:
 class IBOTAlgorithm:
     """Implementation of the Iterative Balancing of Off-Target algorithm."""
 
-    def __init__(
-        self,
-        tbn: TBN,
-        polymers: List[np.ndarray],
-        on_target_indices: Set[int],
-        reactions: List[Reaction],
-        upper_bound_polymers: Optional[Set[int]] = None,
-    ):
+    def __init__(self, tbn: TBN, polymers: List[np.ndarray], on_target_indices: Set[int], reactions: List[Reaction]):
         """
         Initialize IBOT algorithm.
 
@@ -55,15 +48,12 @@ class IBOTAlgorithm:
             polymers: List of all polymers in the basis
             on_target_indices: Set of indices of on-target polymers
             reactions: List of irreducible canonical reactions
-            upper_bound_polymers: Optional set of polymer indices to compute upper bounds for.
-                                 If provided, only these polymers will be assigned μ values.
         """
         self.tbn = tbn
         self.polymers = polymers
         self.on_target_indices = on_target_indices
         self.off_target_indices = set(range(len(polymers))) - on_target_indices
         self.reactions = reactions
-        self.upper_bound_polymers = upper_bound_polymers
 
         # Initialize concentration exponents
         self.mu = np.zeros(len(polymers))
@@ -72,12 +62,7 @@ class IBOTAlgorithm:
             self.mu[idx] = 1.0
 
         # Track which off-target polymers have been assigned
-        if upper_bound_polymers:
-            # When computing upper bounds, only track the specified polymers
-            self.unassigned_off_target = upper_bound_polymers.copy()
-        else:
-            # Normal mode: track all off-target polymers
-            self.unassigned_off_target = self.off_target_indices.copy()
+        self.unassigned_off_target = self.off_target_indices.copy()
 
         # Track iteration information for reactions output
         self.iteration_info = []
@@ -191,29 +176,17 @@ class IBOTAlgorithm:
         off_target_polymers = []
         off_target_mus = []
 
-        # When computing upper bounds, only include the specified polymers
-        if self.upper_bound_polymers:
-            # Include only on-target polymers and the specified off-target polymers
-            for i, polymer in enumerate(self.polymers):
-                if i in self.on_target_indices:
-                    on_target_polymers.append(polymer)
-                    on_target_mus.append(self.mu[i])
-                elif i in self.upper_bound_polymers and self.mu[i] > 0:
-                    off_target_polymers.append(polymer)
-                    off_target_mus.append(self.mu[i])
-        else:
-            # Normal mode: include all polymers with μ > 0
-            for i, polymer in enumerate(self.polymers):
-                # Skip unassigned off-target polymers (μ = 0)
-                if i not in self.on_target_indices and self.mu[i] == 0:
-                    continue
+        for i, polymer in enumerate(self.polymers):
+            # Skip unassigned off-target polymers (μ = 0)
+            if i not in self.on_target_indices and self.mu[i] == 0:
+                continue
 
-                if i in self.on_target_indices:
-                    on_target_polymers.append(polymer)
-                    on_target_mus.append(self.mu[i])
-                else:
-                    off_target_polymers.append(polymer)
-                    off_target_mus.append(self.mu[i])
+            if i in self.on_target_indices:
+                on_target_polymers.append(polymer)
+                on_target_mus.append(self.mu[i])
+            else:
+                off_target_polymers.append(polymer)
+                off_target_mus.append(self.mu[i])
 
         # Sort off-target polymers by concentration exponent (ascending)
         if off_target_polymers:
@@ -225,11 +198,7 @@ class IBOTAlgorithm:
         lines = []
 
         # Header
-        if self.upper_bound_polymers:
-            lines.append("# IBOT Results - Upper Bounds on Concentration Exponents")
-            lines.append(f"# Computing upper bounds for {len(self.upper_bound_polymers)} specific polymers")
-        else:
-            lines.append("# IBOT Results - Concentration Exponents")
+        lines.append("# IBOT Results - Concentration Exponents")
         lines.append(f"# Total polymers: {len(self.polymers)}")
         lines.append(f"# On-target polymers: {len(on_target_polymers)}")
         lines.append(f"# Off-target polymers: {len(off_target_polymers)}")

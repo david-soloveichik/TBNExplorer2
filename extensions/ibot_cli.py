@@ -47,12 +47,6 @@ def main():
         action="store_true",
         help="Generate text file showing all irreducible canonical reactions ordered by IBOT iteration",
     )
-    parser.add_argument(
-        "--upper-bound-on-polymers",
-        type=str,
-        metavar="FILE",
-        help="Compute upper bounds only for specific off-target polymers listed in the given .tbnpolys file",
-    )
 
     args = parser.parse_args()
 
@@ -67,23 +61,6 @@ def main():
     if not on_target_path.exists():
         print(f"Error: On-target polymers file not found: {on_target_path}", file=sys.stderr)
         sys.exit(1)
-
-    # Validate that --generate-tbn and --upper-bound-on-polymers are not used together
-    if args.generate_tbn and args.upper_bound_on_polymers:
-        print(
-            "Error: --generate-tbn cannot be used with --upper-bound-on-polymers\n"
-            "       (we do not know all μ(p) values when computing upper bounds)",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    # Validate upper bound file if provided
-    upper_bound_path = None
-    if args.upper_bound_on_polymers:
-        upper_bound_path = Path(args.upper_bound_on_polymers)
-        if not upper_bound_path.exists():
-            print(f"Error: Upper bound polymers file not found: {upper_bound_path}", file=sys.stderr)
-            sys.exit(1)
 
     # Determine output prefix
     output_prefix = args.output_prefix or tbn_path.stem
@@ -128,27 +105,10 @@ def main():
         # Set up matrices
         reactions_computer.setup_matrices(polymer_vectors, on_target_indices)
 
-        # Load upper bound polymers if specified
-        upper_bound_indices = None
-        if upper_bound_path:
-            print(f"Loading upper bound polymers from {upper_bound_path}...")
-            upper_bound_indices = reactions_computer.load_on_target_polymers(upper_bound_path, polymer_vectors)
-            # Verify these are off-target polymers
-            invalid = upper_bound_indices & on_target_indices
-            if invalid:
-                print("Error: Upper bound polymers must be off-target. Invalid polymers found.", file=sys.stderr)
-                sys.exit(1)
-            print(f"Computing upper bounds for {len(upper_bound_indices)} specific polymers")
-
         # Step 4: Compute irreducible canonical reactions
-        if upper_bound_indices:
-            print("Computing irreducible canonical reactions for specified polymers...")
-            reactions = reactions_computer.compute_irreducible_canonical_reactions_for_polymers(upper_bound_indices)
-            print(f"Found {len(reactions)} irreducible canonical reactions that produce the target polymers")
-        else:
-            print("Computing irreducible canonical reactions...")
-            reactions = reactions_computer.compute_irreducible_canonical_reactions()
-            print(f"Found {len(reactions)} irreducible canonical reactions")
+        print("Computing irreducible canonical reactions...")
+        reactions = reactions_computer.compute_irreducible_canonical_reactions()
+        print(f"Found {len(reactions)} irreducible canonical reactions")
 
         # Step 5: Check detailed balance of on-target polymers
         print("Checking detailed balance of on-target polymers...")
@@ -163,26 +123,17 @@ def main():
 
         # Step 6: Run IBOT algorithm
         print("\nRunning IBOT algorithm...")
-        ibot = IBOTAlgorithm(
-            tbn, polymer_vectors, on_target_indices, reactions, upper_bound_polymers=upper_bound_indices
-        )
+        ibot = IBOTAlgorithm(tbn, polymer_vectors, on_target_indices, reactions)
         concentration_exponents = ibot.run()
 
         # Step 7: Generate output files
-        # Modify output filename if computing upper bounds
-        if upper_bound_indices:
-            output_tbnpolys = Path(f"{output_prefix}-ibot-upper-bounds.tbnpolys")
-        else:
-            output_tbnpolys = Path(f"{output_prefix}-ibot.tbnpolys")
+        output_tbnpolys = Path(f"{output_prefix}-ibot.tbnpolys")
         print(f"\nGenerating output .tbnpolys file: {output_tbnpolys}")
         ibot.generate_tbnpolys_output(output_tbnpolys)
 
         # Generate reactions output file if requested
         if args.output_canonical_reactions:
-            if upper_bound_indices:
-                output_reactions = Path(f"{output_prefix}-ibot-upper-bound-reactions.txt")
-            else:
-                output_reactions = Path(f"{output_prefix}-ibot-reactions.txt")
+            output_reactions = Path(f"{output_prefix}-ibot-reactions.txt")
             print(f"\nGenerating canonical reactions output file: {output_reactions}")
             ibot.generate_reactions_output(output_reactions)
 
