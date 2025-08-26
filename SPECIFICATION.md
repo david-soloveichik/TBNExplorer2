@@ -72,7 +72,6 @@ Internally, we will represent a polymer as vector of non-negative integers corre
 
 # Additional Utilities
 - We want to have Python utility functions for running `Normaliz` to solve Hilbert basis problems and retrieving its output. It is a bit tricky to extract the Hilbert basis from the command line output of Normaliz.
-The path to Normaliz should be hardcoded in the code, but easily changeable (as a constant on top of the relevant file).
 
 
 # Computations over TBNs
@@ -93,7 +92,7 @@ Assuming we are given `<example>.tbn` as input, it should create a file called `
 The CLI tool should return to the command line the number of polymers in the polymer basis.
 
 ### Alternative Hilbert basis calculator
-Let's have an optional argument `--use-4ti2` to use the Hilbert basis solver of the `4ti2` tool instead of Normaliz. (We hope it might be faster in some situations.) The `4ti2` tool is in `/Users/dsolov/Documents/ResearchTools/4ti2`.
+Let's have an optional argument `--use-4ti2` to use the Hilbert basis solver of the `4ti2` tool instead of Normaliz. (We hope it might be faster in some situations.) 
 
 ## 2. Compute polymer free energies
 Given the polymers in the polymer basis, we want to compute their "free energies". 

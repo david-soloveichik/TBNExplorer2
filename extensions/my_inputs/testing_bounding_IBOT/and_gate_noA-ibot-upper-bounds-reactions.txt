@@ -1,0 +1,9 @@
+# Irreducible Canonical Reactions from IBOT Algorithm
+# Total reactions: 0
+# Total iterations: 0
+#
+# Notation:
+#   - Polymers are shown in brackets: {monomer1; monomer2; ...}
+#   - Monomer multiplicities shown as prefix: {2 monomer1; monomer2}
+#   - Polymers marked with ^ were assigned μ in that iteration
+================================================================================

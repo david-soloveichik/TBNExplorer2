@@ -1,0 +1,27 @@
+# All off-target polymers from regular IBOT run
+# This file contains ALL 6 off-target polymers for testing upper bounds
+
+C 
+
+b2 c1 c2
+c1* c2*
+
+B
+a1* a2* b1* b2*
+a1 a2 b1 b2 c1
+a2* b1* b2* c1*
+a2 b1
+
+B
+a2* b1* b2* c1*
+a2 b1
+C
+
+a1* a2* b1* b2*
+a1 a2 b1 b2 c1
+a2* b1* b2* c1*
+a2 b1 
+b2 c1 c2
+c1* c2*
+
+b2 c1 c2

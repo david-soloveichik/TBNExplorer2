@@ -9,6 +9,8 @@ import argparse
 import sys
 from pathlib import Path
 
+import numpy as np
+
 from tbnexplorer2.fourtitwo import FourTiTwoRunner
 from tbnexplorer2.model import TBN
 from tbnexplorer2.normaliz import NormalizRunner
@@ -47,6 +49,12 @@ def main():
         action="store_true",
         help="Generate text file showing all irreducible canonical reactions ordered by IBOT iteration",
     )
+    parser.add_argument(
+        "--upper-bound-on-polymers",
+        type=str,
+        metavar="TBNPOLYS_FILE",
+        help="Compute upper bounds only for specific off-target polymers listed in this .tbnpolys file (requires Normaliz, incompatible with --use-4ti2 and --generate-tbn)",
+    )
 
     args = parser.parse_args()
 
@@ -61,6 +69,26 @@ def main():
     if not on_target_path.exists():
         print(f"Error: On-target polymers file not found: {on_target_path}", file=sys.stderr)
         sys.exit(1)
+
+    # Validate upper bounds options
+    if args.upper_bound_on_polymers:
+        upper_bound_path = Path(args.upper_bound_on_polymers)
+        if not upper_bound_path.exists():
+            print(f"Error: Upper bound polymers file not found: {upper_bound_path}", file=sys.stderr)
+            sys.exit(1)
+
+        if args.use_4ti2:
+            print(
+                "Error: --upper-bound-on-polymers requires Normaliz (cannot be used with --use-4ti2)", file=sys.stderr
+            )
+            sys.exit(1)
+
+        if args.generate_tbn:
+            print(
+                "Error: --upper-bound-on-polymers cannot be used with --generate-tbn (we don't know all polymer concentrations)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
     # Determine output prefix
     output_prefix = args.output_prefix or tbn_path.stem
@@ -106,9 +134,45 @@ def main():
         reactions_computer.setup_matrices(polymer_vectors, on_target_indices)
 
         # Step 4: Compute irreducible canonical reactions
-        print("Computing irreducible canonical reactions...")
-        reactions = reactions_computer.compute_irreducible_canonical_reactions()
-        print(f"Found {len(reactions)} irreducible canonical reactions")
+        if args.upper_bound_on_polymers:
+            # Load target polymers for upper bounds
+            from tbnexplorer2.tbnpolys_io import TbnpolysParser
+
+            print(f"Loading target polymers from {args.upper_bound_on_polymers}...")
+            parser = TbnpolysParser(tbn)
+            target_polymers_raw = parser.parse_file(args.upper_bound_on_polymers)
+
+            # Convert to polymer indices
+            target_polymer_indices = set()
+            for polymer_raw in target_polymers_raw:
+                # Create monomer count vector
+                counts = np.zeros(len(tbn.monomers), dtype=int)
+                for multiplicity, monomer in polymer_raw:
+                    monomer_idx = tbn.monomers.index(monomer)
+                    counts[monomer_idx] += multiplicity
+
+                # Find index in polymer basis
+                found = False
+                for i, polymer in enumerate(polymer_vectors):
+                    if np.array_equal(counts, polymer):
+                        target_polymer_indices.add(i)
+                        found = True
+                        break
+
+                if not found:
+                    print(f"Warning: Target polymer {counts} not found in polymer basis", file=sys.stderr)
+
+            if not target_polymer_indices:
+                print("Error: No valid target polymers found in polymer basis", file=sys.stderr)
+                sys.exit(1)
+
+            print(f"Computing irreducible canonical reactions for {len(target_polymer_indices)} target polymers...")
+            reactions = reactions_computer.compute_irreducible_canonical_reactions_for_targets(target_polymer_indices)
+            print(f"Found {len(reactions)} irreducible canonical reactions that produce target polymers")
+        else:
+            print("Computing irreducible canonical reactions...")
+            reactions = reactions_computer.compute_irreducible_canonical_reactions()
+            print(f"Found {len(reactions)} irreducible canonical reactions")
 
         # Step 5: Check detailed balance of on-target polymers
         print("Checking detailed balance of on-target polymers...")
@@ -127,13 +191,14 @@ def main():
         concentration_exponents = ibot.run()
 
         # Step 7: Generate output files
-        output_tbnpolys = Path(f"{output_prefix}-ibot.tbnpolys")
+        suffix = "-upper-bounds" if args.upper_bound_on_polymers else ""
+        output_tbnpolys = Path(f"{output_prefix}-ibot{suffix}.tbnpolys")
         print(f"\nGenerating output .tbnpolys file: {output_tbnpolys}")
         ibot.generate_tbnpolys_output(output_tbnpolys)
 
         # Generate reactions output file if requested
         if args.output_canonical_reactions:
-            output_reactions = Path(f"{output_prefix}-ibot-reactions.txt")
+            output_reactions = Path(f"{output_prefix}-ibot{suffix}-reactions.txt")
             print(f"\nGenerating canonical reactions output file: {output_reactions}")
             ibot.generate_reactions_output(output_reactions)
 

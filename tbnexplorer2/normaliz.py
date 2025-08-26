@@ -108,6 +108,86 @@ class NormalizRunner:
                 f"Please install Normaliz or update NORMALIZ_PATH in normaliz.py"
             ) from e
 
+    def compute_hilbert_basis_with_strict_inequality(
+        self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray
+    ) -> List[np.ndarray]:
+        """
+        Compute Hilbert basis with strict inequality constraint.
+
+        Computes the Hilbert basis of:
+        { x >= 0 : equations * x = 0, inequalities * x >= 0, strict_inequality * x > 0 }
+
+        For integer solutions, the strict inequality P*x > 0 is equivalent to P*x >= 1.
+
+        Args:
+            equations: Matrix defining linear equations (B matrix for mass conservation)
+            inequalities: Matrix defining non-strict inequalities (S matrix for canonical reactions)
+            strict_inequality: Row vector defining strict inequality (P selecting target polymers)
+
+        Returns:
+            List of Hilbert basis vectors
+
+        Raises:
+            RuntimeError: If Normaliz execution fails
+        """
+        # Create temporary directory for Normaliz files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            input_file = os.path.join(tmpdir, "input.in")
+
+            # Write Normaliz input file with strict inequality
+            self._write_normaliz_input_with_strict(equations, inequalities, strict_inequality, input_file)
+
+            # Run Normaliz
+            output_file = self._run_normaliz(input_file)
+
+            # Parse Hilbert basis from output
+            hilbert_basis = self._parse_hilbert_basis(output_file)
+
+        return hilbert_basis
+
+    def _write_normaliz_input_with_strict(
+        self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray, filepath: str
+    ):
+        """
+        Write Normaliz input file with equations, inequalities, and strict inequality.
+
+        Args:
+            equations: Matrix of equations (each row is an equation)
+            inequalities: Matrix of inequalities (each row is an inequality)
+            strict_inequality: Row vector for strict inequality
+            filepath: Path to write input file
+        """
+        n_variables = equations.shape[1]
+
+        with open(filepath, "w") as f:
+            f.write("/* Normaliz input with strict inequality */\n\n")
+
+            # Specify ambient space dimension
+            f.write(f"amb_space {n_variables}\n\n")
+
+            # Write equations if any
+            if equations.shape[0] > 0:
+                f.write(f"equations {equations.shape[0]}\n")
+                for row in equations:
+                    f.write(" ".join(str(int(val)) for val in row) + "\n")
+                f.write("\n")
+
+            # Write non-strict inequalities if any
+            if inequalities.shape[0] > 0:
+                f.write(f"inequalities {inequalities.shape[0]}\n")
+                for row in inequalities:
+                    f.write(" ".join(str(int(val)) for val in row) + "\n")
+                f.write("\n")
+
+            # Write strict inequality as P*x >= 1
+            # Normaliz's strict_inequalities type encodes ξ·x >= 1
+            f.write("strict_inequalities 1\n")
+            f.write(" ".join(str(int(val)) for val in strict_inequality) + "\n")
+            f.write("\n")
+
+            # Request Hilbert basis computation
+            f.write("HilbertBasis\n")
+
     def _parse_hilbert_basis(self, output_file: str) -> List[np.ndarray]:
         """
         Parse Hilbert basis from Normaliz output file.

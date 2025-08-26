@@ -37,7 +37,7 @@ S*r ≥ 0
 
 Now we are interested in the irreducible reactions in the space of all canonical reactions: that cannot be written as a sum of two other canonical reactions. These correspond exactly to the Hilbert basis of the above cone. 
 
-We use Normaliz (or 4ti2) to get the Hilbert basis of this cone. We call these the **irreducible canonical reactions**. 
+We use Normaliz (or 4ti2 with `--use-4ti2`) to get the Hilbert basis of this cone. We call these the **irreducible canonical reactions**. 
 
 
 # Extension: Iterative Balancing of Off-Target Polymers ("IBOT")
@@ -118,15 +118,23 @@ Often we are only interested in an upper bound on the concentrations of some spe
 In particular, for large systems, the generation of all irreducible canonical reactions (by Normaliz or 4ti2) takes too long or is completely infeasible.
 Rather than generating the exact equilibrium concentrations via the IBOT algorithm, we can much more more efficiently compute an upper bound on the p_i by narrowing our focus to reactions that directly produce some p_i instead of examining the full set of irreducible canonical reactions.  
 
-The way we do this is to change the linear problem that we use the generate the irreducible canonical reactions. Suppose we want an upper bound on off-target polymers p_1, ..., p_k.
+The way we do this is to change the linear problem that we use the generate the irreducible canonical reactions. Suppose we want an upper bound on off-target polymers p_1, ..., p_k. The linear system is:
 B*r = 0
 S*r ≥ 0
 P*r > 0
-where P selects the sum p_1 + p_2 + ... + p_k.
+where B and S are as described above, and P selects the sum p_1 + p_2 + ... + p_k.
 In other words, we only look at irreducible canonical reactions that produce some pi.
+We look at the documentation for Normaliz to understand how to compute the Hilbert basis for problems with strict inequalities (/Users/dsolov/Documents/ResearchTools/Normaliz/).
 
 When we compute `μ(pi)` using this reduced set of reactions, we will get something that is a lower-bound on the true `μ(pi)`. This gives us an upper-bound on `(c'/ρH20)^μ(pi)` since mole fraction `c'/ρH20` is always less than 1.
 
-To implement this functionality, we introduce an optional command line argument `--upper-bound-on-polymers {file_name}.tbnpolys` where the file is in .tbnpolys syntax specifying the p_i. 
-When this option is used, we cannot use the option `--generate-tbn {c} {units}` since we do not know all the `μ(p)` for all off-target p. 
+To implement this functionality, we introduce an optional command line argument `--upper-bound-on-polymers {undesired_off_target}.tbnpolys` where the file is in .tbnpolys syntax specifying the p_i. 
+
+When this option is used, we cannot use the option `--generate-tbn {c} {units}` since we do not know all the `μ(p)` for all off-target p.
+We also disable the option `--use-4ti2` since we focus on how Normaliz solves the strict inequality problem.
 We can still use `--output-canonical-reactions` to show the relevant information for the reactions we generated in the new reduced way.
+
+To test the bounding functionality, we can add _all_ off-target polymers (that can be produced by some reaction from on-target polymers) to `{undesired_off_target}.tbnpolys`. Then if our implementation is correct, the concentration coefficients obtained should be _identical to_ (not just lower-bound) the case without `--upper-bound-on-polymers` option. As the test system for this, we can use files in `extensions/my_inputs/testing_bounding_IBOT/`: 
+- TBN system: `and_gate_noA.tbn`
+- On-target polymers: `and_gate_noA_on-target.tbnpolys`
+- All off-target polymers (that can be produced by some reaction from on-target polymers): `and_gate_noA_all-off-target.tbnpolys`
