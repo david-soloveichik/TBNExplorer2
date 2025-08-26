@@ -301,6 +301,120 @@ class CanonicalReactionsComputer:
 
         return reactions
 
+    def compute_irreducible_canonical_reactions_for_polymers(self, target_polymer_indices: Set[int]) -> List[Reaction]:
+        """
+        Compute irreducible canonical reactions that produce specific off-target polymers.
+
+        This is used for computing upper bounds on specific polymer concentrations.
+        The reactions computed are those that:
+        1. Conserve mass (B*r = 0)
+        2. Are canonical (S*r >= 0, no off-target reactants)
+        3. Produce at least one of the target polymers (P*r > 0)
+        4. Are irreducible in this restricted space
+
+        Args:
+            target_polymer_indices: Set of polymer indices we want to bound
+
+        Returns:
+            List of Reaction objects that produce the target polymers
+        """
+        if self.B_matrix is None or self.S_matrix is None:
+            raise RuntimeError("Matrices not set up. Call setup_matrices first.")
+
+        # Validate that all target polymers are off-target
+        invalid_targets = target_polymer_indices & self.on_target_indices
+        if invalid_targets:
+            raise ValueError(f"Target polymers must be off-target. Invalid indices: {invalid_targets}")
+
+        n_polymers = self.B_matrix.shape[1]
+        n_on_target = len(self.on_target_indices)
+        n_off_target = len(self.off_target_indices)
+
+        # Create runner
+        runner = FourTiTwoRunner() if self.use_4ti2 else NormalizRunner()
+
+        # Create lists for indexing
+        on_target_list = sorted(self.on_target_indices)
+        off_target_list = sorted(self.off_target_indices)
+
+        # Find which off-target indices correspond to our target polymers
+        target_off_indices = []
+        for i, p in enumerate(off_target_list):
+            if p in target_polymer_indices:
+                target_off_indices.append(2 * n_on_target + i)  # Index in the lifted space
+
+        if not target_off_indices:
+            return []
+
+        # We need to modify the linear problem to include P*r > 0
+        # where P selects the sum of target polymers
+        # We'll use a different approach: add a new variable t and constraint
+        # P*r - t = 0 with t >= 1
+
+        # Variable order: [r_on_target_pos, r_on_target_neg, r_off_target, t]
+        # Total variables: 2 * n_on_target + n_off_target + 1
+
+        # Create the augmented B matrix
+        B_augmented = np.zeros((self.B_matrix.shape[0] + 1, 2 * n_on_target + n_off_target + 1), dtype=int)
+
+        # Fill in the mass conservation part (first m rows)
+        for i, p in enumerate(on_target_list):
+            B_augmented[:-1, i] = self.B_matrix[:, p]
+            B_augmented[:-1, n_on_target + i] = -self.B_matrix[:, p]
+
+        for i, p in enumerate(off_target_list):
+            B_augmented[:-1, 2 * n_on_target + i] = self.B_matrix[:, p]
+
+        # Add constraint P*r - t = 0 (last row)
+        # P selects the sum of target polymers
+        for idx in target_off_indices:
+            B_augmented[-1, idx] = 1
+        B_augmented[-1, -1] = -1  # -t term
+
+        # Now we compute Hilbert basis of { x >= 0 : B_augmented * x = 0, x[-1] >= 1 }
+        # We can enforce x[-1] >= 1 by computing Hilbert basis and filtering
+        hilbert_basis = runner.compute_hilbert_basis(B_augmented)
+
+        if not hilbert_basis:
+            return []
+
+        # Filter to keep only vectors where t >= 1 (last component)
+        valid_basis = [h for h in hilbert_basis if h[-1] > 0]
+
+        # Find the minimum t value among valid vectors
+        if not valid_basis:
+            return []
+
+        min_t = min(h[-1] for h in valid_basis)
+
+        # Normalize vectors to have t = min_t and extract unique reactions
+        seen_reactions = set()
+        reactions = []
+
+        for h_vector in valid_basis:
+            # Skip if t value is not minimal (we want minimal reactions)
+            if h_vector[-1] != min_t:
+                continue
+
+            # Reconstruct the original reaction vector
+            reaction_vec = np.zeros(n_polymers, dtype=int)
+
+            # On-target polymers
+            for i, p in enumerate(on_target_list):
+                reaction_vec[p] = h_vector[i] - h_vector[n_on_target + i]
+
+            # Off-target polymers
+            for i, p in enumerate(off_target_list):
+                reaction_vec[p] = h_vector[2 * n_on_target + i]
+
+            # Create a hashable representation to avoid duplicates
+            reaction_tuple = tuple(reaction_vec)
+            if reaction_tuple not in seen_reactions:
+                seen_reactions.add(reaction_tuple)
+                reactions.append(Reaction(reaction_vec))
+
+        return reactions
+
     def check_on_target_detailed_balance(self, reactions: List[Reaction]) -> Optional[Reaction]:
         """
         Check if on-target polymers are in detailed balance.

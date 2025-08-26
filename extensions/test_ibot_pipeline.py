@@ -246,12 +246,7 @@ def run_ibot_pipeline_test(
                 if i < len(mu_values):
                     mu = mu_values[i]
                     # Use the appropriate formula based on mole fraction mode
-                    if use_mole_fractions:
-                        # Mole fraction formula: ((c'/rho_H2O) ** μ(p)) * rho_H2O
-                        expected_conc_molar = ((c_molar / rho_h2o) ** mu) * rho_h2o
-                    else:
-                        # Simple formula: c' ** μ(p)
-                        expected_conc_molar = c_molar**mu
+                    expected_conc_molar = (c_molar / rho_h2o) ** mu * rho_h2o if use_mole_fractions else c_molar ** mu
 
                     # Calculate relative error
                     if expected_conc_molar > 0:
