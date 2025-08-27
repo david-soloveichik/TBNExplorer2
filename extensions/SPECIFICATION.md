@@ -11,9 +11,10 @@ There should be an error if the input .tbnpolys file contains a polymer that is 
 Suppose there are n polymers and m monomers. 
 
 ### Polymer reactions
-We consider reactions *between polymers*. A reaction r corresponds to a vector of integers of length n: 
-r[p] = the change of count of polymer p in reaction r 
+We consider reactions *between polymers*. A reaction r corresponds to a vector of integers of length n:  
+r[p] = the change of count of polymer p in reaction r  
 Examples:
+
 1. If the reactants of r include p with multiplicity 1, and the products do not include p, then r[p] = -1.
 2. If the reactants of r include p with multiplicity 1, and the products include p with multiplicity 3, then r[p] = 2.
 3. If the reactants of r no not include p, and the products include p with multiplicity 2, then r[p] = 2.
@@ -118,23 +119,48 @@ Often we are only interested in an upper bound on the concentrations of some spe
 In particular, for large systems, the generation of all irreducible canonical reactions (by Normaliz or 4ti2) takes too long or is completely infeasible.
 Rather than generating the exact equilibrium concentrations via the IBOT algorithm, we can much more more efficiently compute an upper bound on the p_i by narrowing our focus to reactions that directly produce some p_i instead of examining the full set of irreducible canonical reactions.  
 
-The way we do this is to change the linear problem that we use the generate the irreducible canonical reactions. Suppose we want an upper bound on off-target polymers p_1, ..., p_k. The linear system is:
-B*r = 0
-S*r ≥ 0
-P*r > 0
-where B and S are as described above, and P selects the sum p_1 + p_2 + ... + p_k.
-In other words, we only look at irreducible canonical reactions that produce some pi.
-We look at the documentation for Normaliz to understand how to compute the Hilbert basis for problems with strict inequalities (/Users/dsolov/Documents/ResearchTools/Normaliz/).
+The way we do this is to change the linear problem that we use the generate the irreducible canonical reactions. Suppose we want an upper bound on off-target polymers p_1, ..., p_k. 
+
+For each p_i we do the following:
+Construct the linear system:
+B * r = 0
+S * r ≥ 0
+e_i * r > 0
+where B and S are as described above, and e_i selects p_i in r. 
+We use Normaliz with option "ModuleGeneratorsOverOriginalMonoid" to get the "module generators over the recession monoid". Call this T_i.
+Repeat for next i.
+[Note for Claude: You can look at the documentation for Normaliz to understand how to compute for problems with strict inequalities and about ModuleGeneratorsOverOriginalMonoid (/Users/dsolov/Documents/ResearchTools/Normaliz/). But do not directly read the PDF file because it is too large; rather you can read the source for the documentation.]
+
+Our reduced set of canonical reaction is not the union of the T_i.
 
 When we compute `μ(pi)` using this reduced set of reactions, we will get something that is a lower-bound on the true `μ(pi)`. This gives us an upper-bound on `(c'/ρH20)^μ(pi)` since mole fraction `c'/ρH20` is always less than 1.
 
-To implement this functionality, we introduce an optional command line argument `--upper-bound-on-polymers {undesired_off_target}.tbnpolys` where the file is in .tbnpolys syntax specifying the p_i. 
+## Implementation Note: Variable Splitting Instead of Explicit S Matrix
+
+The implementation uses a **variable splitting technique** rather than explicitly constructing the S matrix described above. This mathematically equivalent approach:
+
+1. **Splits on-target polymer variables** into positive and negative parts (r = r_pos - r_neg), allowing them to take any sign
+2. **Keeps off-target polymer variables** as single non-negative variables (r ≥ 0)
+
+This transformation implicitly enforces S*r ≥ 0 (no off-target reactants) because:
+
+- Off-target polymers are constrained to r ≥ 0, so they can only appear as products (positive values)
+- On-target polymers can be positive or negative, allowing them to be reactants or products
+
+**Why this approach?** Variable splitting is more efficient for Hilbert basis computation as it:
+
+- Avoids constructing the large S matrix explicitly
+- Reduces the number of inequality constraints
+- Is a standard technique in polyhedral computation that solvers like Normaliz handle efficiently
+
+To implement this functionality, we introduce an optional command line argument `--upper-bound-on-polymers {undesired_off_target}.tbnpolys` where the file is in .tbnpolys syntax specifying the p_i.
 
 When this option is used, we cannot use the option `--generate-tbn {c} {units}` since we do not know all the `μ(p)` for all off-target p.
 We also disable the option `--use-4ti2` since we focus on how Normaliz solves the strict inequality problem.
 We can still use `--output-canonical-reactions` to show the relevant information for the reactions we generated in the new reduced way.
 
-To test the bounding functionality, we can add _all_ off-target polymers (that can be produced by some reaction from on-target polymers) to `{undesired_off_target}.tbnpolys`. Then if our implementation is correct, the concentration coefficients obtained should be _identical to_ (not just lower-bound) the case without `--upper-bound-on-polymers` option. As the test system for this, we can use files in `extensions/my_inputs/testing_bounding_IBOT/`: 
+To test the bounding functionality, we can add _all_ off-target polymers (that can be produced by some reaction from on-target polymers) to `{undesired_off_target}.tbnpolys`. Then if our implementation is correct, the concentration coefficients obtained should be _identical to_ (not just lower-bound) the case without `--upper-bound-on-polymers` option. As the test system for this, we can use files in `extensions/my_inputs/testing_bounding_IBOT/`:
+
 - TBN system: `and_gate_noA.tbn`
 - On-target polymers: `and_gate_noA_on-target.tbnpolys`
 - All off-target polymers (that can be produced by some reaction from on-target polymers): `and_gate_noA_all-off-target.tbnpolys`
