@@ -108,24 +108,22 @@ class NormalizRunner:
                 f"Please install Normaliz or update NORMALIZ_PATH in normaliz.py"
             ) from e
 
-    def compute_hilbert_basis_with_strict_inequality(
-        self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray
-    ) -> List[np.ndarray]:
+    def compute_module_generators_for_slice(self, equations: np.ndarray, slice_vector: np.ndarray) -> List[np.ndarray]:
         """
-        Compute Hilbert basis with strict inequality constraint.
+        Compute module generators over original monoid for a slice.
 
-        Computes the Hilbert basis of:
-        { x >= 0 : equations * x = 0, inequalities * x >= 0, strict_inequality * x > 0 }
+        Computes the module generators of the slice:
+        { x >= 0 : equations * x = 0, slice_vector * x >= 1 }
 
-        For integer solutions, the strict inequality P*x > 0 is equivalent to P*x >= 1.
+        This is specifically for finding reactions that produce a target polymer,
+        where slice_vector has 1 at the target polymer position and 0 elsewhere.
 
         Args:
             equations: Matrix defining linear equations (B matrix for mass conservation)
-            inequalities: Matrix defining non-strict inequalities (S matrix for canonical reactions)
-            strict_inequality: Row vector defining strict inequality (P selecting target polymers)
+            slice_vector: Row vector defining the slice (e.g., selecting a target polymer)
 
         Returns:
-            List of Hilbert basis vectors
+            List of module generator vectors
 
         Raises:
             RuntimeError: If Normaliz execution fails
@@ -134,16 +132,68 @@ class NormalizRunner:
         with tempfile.TemporaryDirectory() as tmpdir:
             input_file = os.path.join(tmpdir, "input.in")
 
-            # Write Normaliz input file with strict inequality
-            self._write_normaliz_input_with_strict(equations, inequalities, strict_inequality, input_file)
+            # Write Normaliz input file for module generators
+            self._write_normaliz_input_for_module_generators(equations, slice_vector, input_file)
 
             # Run Normaliz
             output_file = self._run_normaliz(input_file)
 
-            # Parse Hilbert basis from output
-            hilbert_basis = self._parse_hilbert_basis(output_file)
+            # Parse module generators from output
+            module_generators = self._parse_module_generators(output_file)
 
-        return hilbert_basis
+        return module_generators
+
+    def _write_normaliz_input_for_module_generators(
+        self, equations: np.ndarray, slice_vector: np.ndarray, filepath: str
+    ):
+        """
+        Write Normaliz input file for computing module generators for a slice.
+
+        We solve: { x >= 0 : equations * x = 0, slice * x >= 1 }
+        This represents reactions that conserve mass and produce at least one target polymer.
+
+        Args:
+            equations: Matrix of equations (each row is an equation)
+            slice_vector: Row vector defining the slice (positivity constraint)
+            filepath: Path to write input file
+        """
+        n_variables = equations.shape[1]
+
+        with open(filepath, "w") as f:
+            f.write("/* Normaliz input for Hilbert basis with strict inequality */\n\n")
+
+            # Specify ambient space dimension
+            f.write(f"amb_space {n_variables}\n\n")
+
+            # Write equations if any
+            if equations.shape[0] > 0:
+                f.write(f"equations {equations.shape[0]}\n")
+                for row in equations:
+                    f.write(" ".join(str(int(val)) for val in row) + "\n")
+                f.write("\n")
+
+            # Use strict_inequalities to enforce slice * x >= 1
+            # This ensures the target polymer must be produced
+            f.write("strict_inequalities 1\n")
+            f.write(" ".join(str(int(val)) for val in slice_vector) + "\n")
+            f.write("\n")
+
+            # Request Hilbert basis computation for the slice
+            # This gives us all solutions, not just module generators
+            f.write("HilbertBasis\n")
+
+    def _parse_module_generators(self, output_file: str) -> List[np.ndarray]:
+        """
+        Parse module generators (Hilbert basis) from Normaliz output file.
+
+        Args:
+            output_file: Path to Normaliz output file
+
+        Returns:
+            List of module generator vectors as numpy arrays
+        """
+        # Use the existing Hilbert basis parser since we're now computing Hilbert basis
+        return self._parse_hilbert_basis(output_file)
 
     def _write_normaliz_input_with_strict(
         self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray, filepath: str
@@ -213,6 +263,7 @@ class NormalizRunner:
                 if (
                     "lattice points in polytope (Hilbert basis elements of degree 1):" in line
                     or "Hilbert basis elements:" in line
+                    or "module generators:" in line
                 ):
                     in_hilbert_section = True
                     found_header = True

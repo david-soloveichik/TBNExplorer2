@@ -77,7 +77,19 @@ class Reaction:
 
 
 class CanonicalReactionsComputer:
-    """Computes irreducible canonical reactions for a TBN system."""
+    """Computes irreducible canonical reactions for a TBN system.
+
+    A canonical reaction is one where off-target polymers can only appear as products,
+    not as reactants. Mathematically, this is expressed as S*r >= 0, where S is a
+    selection matrix for off-target polymers and r is the reaction vector.
+
+    IMPORTANT IMPLEMENTATION NOTE:
+    Rather than explicitly constructing and using the S matrix, this implementation
+    enforces the canonical constraint through variable splitting:
+    - On-target polymers are split into positive and negative variables (can be +/- in reactions)
+    - Off-target polymers use single non-negative variables (can only be >= 0 in reactions)
+    This approach implicitly enforces S*r >= 0 without needing the S matrix explicitly.
+    """
 
     def __init__(self, tbn: TBN, use_4ti2: bool = False):
         """
@@ -176,6 +188,10 @@ class CanonicalReactionsComputer:
         2. Are canonical (S*r >= 0, no off-target reactants)
         3. Are irreducible (cannot be written as sum of two other canonical reactions)
 
+        IMPORTANT: The canonical constraint S*r >= 0 is enforced implicitly through
+        variable splitting rather than constructing an explicit S matrix. See detailed
+        comments in the implementation below.
+
         Returns:
             List of Reaction objects representing irreducible canonical reactions
         """
@@ -252,12 +268,20 @@ class CanonicalReactionsComputer:
         # We need to handle the fact that on-target polymers can have negative values
         # So we'll use a different encoding
 
+        # VARIABLE SPLITTING TO ENFORCE CANONICAL CONSTRAINT:
+        # ====================================================
+        # Instead of explicitly using S*r >= 0, we enforce the canonical constraint
+        # (no off-target reactants) through variable transformation:
+        #
         # Split variables into positive and negative parts for on-target polymers only
         n_on_target = len(self.on_target_indices)
         n_off_target = len(self.off_target_indices)
 
-        # Variable order: [r_on_target_pos, r_on_target_neg, r_off_target]
+        # Variable order in lifted space: [r_on_target_pos, r_on_target_neg, r_off_target]
         # Total variables: 2 * n_on_target + n_off_target
+        #
+        # Key insight: By keeping off-target variables as single non-negative variables,
+        # we ensure they can never be negative (reactants) in the original reaction vector.
 
         # Create the new B matrix for the split variables
         on_target_list = sorted(self.on_target_indices)
@@ -267,12 +291,14 @@ class CanonicalReactionsComputer:
 
         # Fill in the lifted B matrix
         for i, p in enumerate(on_target_list):
-            # Positive part
-            B_lifted[:, i] = self.B_matrix[:, p]
-            # Negative part (subtract)
-            B_lifted[:, n_on_target + i] = -self.B_matrix[:, p]
+            # On-target: split into positive and negative parts
+            # Original: r[p] = pos - neg, allowing any sign
+            B_lifted[:, i] = self.B_matrix[:, p]  # Positive part
+            B_lifted[:, n_on_target + i] = -self.B_matrix[:, p]  # Negative part (subtract)
 
         for i, p in enumerate(off_target_list):
+            # Off-target: single non-negative variable
+            # Original: r[p] = h[i] >= 0, ensuring products only
             B_lifted[:, 2 * n_on_target + i] = self.B_matrix[:, p]
 
         # Compute Hilbert basis of { x >= 0 : B_lifted * x = 0 }
@@ -284,14 +310,17 @@ class CanonicalReactionsComputer:
         # Convert back to reaction vectors
         reactions = []
         for h_vector in hilbert_basis:
-            # Reconstruct the original reaction vector
+            # Reconstruct the original reaction vector from lifted space
             reaction = np.zeros(n_polymers, dtype=int)
 
             # On-target polymers: r[p] = h_pos[i] - h_neg[i]
+            # Can be positive (product), negative (reactant), or zero
             for i, p in enumerate(on_target_list):
                 reaction[p] = h_vector[i] - h_vector[n_on_target + i]
 
-            # Off-target polymers: r[p] = h[i]
+            # Off-target polymers: r[p] = h[i] >= 0
+            # Always non-negative, ensuring they only appear as products
+            # This is how we enforce S*r >= 0 without explicit S matrix
             for i, p in enumerate(off_target_list):
                 reaction[p] = h_vector[2 * n_on_target + i]
 
@@ -306,10 +335,15 @@ class CanonicalReactionsComputer:
         Compute irreducible canonical reactions that produce specific target polymers.
 
         This is used for computing upper bounds on specific off-target polymer concentrations.
-        The system solved is:
+        For each target polymer p_i, we compute module generators for the system:
         - B*r = 0 (mass conservation)
         - S*r >= 0 (canonical reactions - no off-target reactants)
-        - P*r > 0 (must produce at least one target polymer)
+        - e_i*r >= 1 (must produce target polymer p_i)
+
+        IMPORTANT: The S*r >= 0 constraint is enforced implicitly through variable splitting:
+        - On-target polymers are split into positive and negative parts (can be reactants or products)
+        - Off-target polymers are kept as single non-negative variables (can only be products)
+        This ensures off-target polymers never appear as reactants, which is what S*r >= 0 enforces.
 
         Args:
             target_polymer_indices: Set of polymer indices to target (must be off-target)
@@ -335,82 +369,100 @@ class CanonicalReactionsComputer:
         if invalid_indices:
             raise ValueError(f"Target polymer indices out of range: {invalid_indices}")
 
-        # Create P matrix: single row selecting sum of target polymers
-        P_matrix = np.zeros(n_polymers, dtype=int)
-        for idx in target_polymer_indices:
-            P_matrix[idx] = 1
-
-        # We need to compute Hilbert basis with strict inequality
-        # System: B*r = 0, S*r >= 0, P*r > 0
-
-        # For Normaliz, we need to transform this carefully
-        # We'll use the same variable splitting approach as before but with strict inequality
-
-        n_on_target = len(self.on_target_indices)
-        n_off_target = len(self.off_target_indices)
-
-        on_target_list = sorted(self.on_target_indices)
-        off_target_list = sorted(self.off_target_indices)
-
-        # Create lifted B matrix for split variables
-        B_lifted = np.zeros((self.B_matrix.shape[0], 2 * n_on_target + n_off_target), dtype=int)
-
-        for i, p in enumerate(on_target_list):
-            B_lifted[:, i] = self.B_matrix[:, p]  # Positive part
-            B_lifted[:, n_on_target + i] = -self.B_matrix[:, p]  # Negative part
-
-        for i, p in enumerate(off_target_list):
-            B_lifted[:, 2 * n_on_target + i] = self.B_matrix[:, p]
-
-        # Create lifted S matrix (all off-target variables must be non-negative)
-        # This is implicitly handled by the non-negativity constraint in Normaliz
-        # But we need to ensure the transformation is correct
-
-        # Create lifted P vector for selecting target polymers
-        P_lifted = np.zeros(2 * n_on_target + n_off_target, dtype=int)
-        for i, p in enumerate(off_target_list):
-            if p in target_polymer_indices:
-                P_lifted[2 * n_on_target + i] = 1
-
-        # Use Normaliz - but with a filtering approach
-        # The strict inequality approach isn't working, so we compute the full
-        # Hilbert basis and filter for reactions that produce target polymers
         if self.use_4ti2:
             raise ValueError("Upper bound computation requires Normaliz (--use-4ti2 not supported)")
 
         runner = NormalizRunner()
 
-        # Compute the regular Hilbert basis (all canonical reactions)
-        hilbert_basis_raw = runner.compute_hilbert_basis(B_lifted)
-        
-        # Filter for reactions where P_lifted * h > 0 (i.e., at least one target polymer is produced)
-        hilbert_basis = []
-        for h_vector in hilbert_basis_raw:
-            if np.dot(P_lifted, h_vector) > 0:
-                hilbert_basis.append(h_vector)
+        # We'll compute module generators for each target polymer separately
+        # and combine the results (union of T_i)
+        all_reactions = []
 
-        if not hilbert_basis:
-            return []
+        n_on_target = len(self.on_target_indices)
+        n_off_target = len(self.off_target_indices)
+        on_target_list = sorted(self.on_target_indices)
+        off_target_list = sorted(self.off_target_indices)
 
-        # Convert back to reaction vectors
-        reactions = []
-        for h_vector in hilbert_basis:
-            # Reconstruct the original reaction vector
-            reaction = np.zeros(n_polymers, dtype=int)
+        # VARIABLE SPLITTING APPROACH TO ENFORCE CANONICAL CONSTRAINTS:
+        # =============================================================
+        # We transform the original n-dimensional problem into a lifted space with
+        # (2 * n_on_target + n_off_target) dimensions:
+        #
+        # 1. On-target polymers (can be reactants or products):
+        #    - Each on-target polymer p is split into two variables: p_pos and p_neg
+        #    - In the original space: r[p] = p_pos - p_neg
+        #    - Both p_pos >= 0 and p_neg >= 0 (enforced by Hilbert basis computation)
+        #    - This allows r[p] to be positive (product), negative (reactant), or zero
+        #
+        # 2. Off-target polymers (can ONLY be products, not reactants):
+        #    - Each off-target polymer q has a single variable q >= 0
+        #    - In the original space: r[q] = q
+        #    - Since q >= 0, off-target polymers can only have r[q] >= 0 (products only)
+        #    - This implicitly enforces S*r >= 0 without explicitly constructing S matrix
+        #
+        # The lifted B matrix accounts for this variable transformation:
+        B_lifted = np.zeros((self.B_matrix.shape[0], 2 * n_on_target + n_off_target), dtype=int)
 
-            # On-target polymers: r[p] = h_pos[i] - h_neg[i]
-            for i, p in enumerate(on_target_list):
-                reaction[p] = h_vector[i] - h_vector[n_on_target + i]
+        # On-target polymer columns (split into positive and negative parts)
+        for i, p in enumerate(on_target_list):
+            B_lifted[:, i] = self.B_matrix[:, p]  # Positive part contributes +B[p]
+            B_lifted[:, n_on_target + i] = -self.B_matrix[:, p]  # Negative part contributes -B[p]
 
-            # Off-target polymers: r[p] = h[i]
+        # Off-target polymer columns (single non-negative variable)
+        for i, p in enumerate(off_target_list):
+            B_lifted[:, 2 * n_on_target + i] = self.B_matrix[:, p]
+
+        # For each target polymer, compute module generators
+        for target_idx in target_polymer_indices:
+            # Create slice vector e_i for this target polymer
+            slice_vector = np.zeros(2 * n_on_target + n_off_target, dtype=int)
+
+            # Find position of target_idx in the lifted space
             for i, p in enumerate(off_target_list):
-                reaction[p] = h_vector[2 * n_on_target + i]
+                if p == target_idx:
+                    slice_vector[2 * n_on_target + i] = 1
+                    break
 
-            # Skip trivial reactions (all zeros) - shouldn't happen with strict inequality
-            if np.any(reaction != 0):
-                reactions.append(Reaction(reaction))
+            # Compute module generators for this slice
+            try:
+                module_gens = runner.compute_module_generators_for_slice(B_lifted, slice_vector)
 
-        return reactions
+                # Convert module generators from lifted space back to reaction vectors
+                for h_vector in module_gens:
+                    # Reconstruct the original reaction vector
+                    reaction = np.zeros(n_polymers, dtype=int)
+
+                    # On-target polymers: r[p] = h_pos[i] - h_neg[i]
+                    # This can be positive (product), negative (reactant), or zero
+                    for i, p in enumerate(on_target_list):
+                        reaction[p] = h_vector[i] - h_vector[n_on_target + i]
+
+                    # Off-target polymers: r[p] = h[i]
+                    # Since h[i] >= 0 (from Hilbert basis), these are always non-negative
+                    # This ensures off-target polymers only appear as products (canonical constraint)
+                    for i, p in enumerate(off_target_list):
+                        reaction[p] = h_vector[2 * n_on_target + i]
+
+                    # Skip trivial reactions (all zeros)
+                    if np.any(reaction != 0):
+                        all_reactions.append(Reaction(reaction))
+
+            except RuntimeError as e:
+                print(f"Warning: Failed to compute module generators for polymer {target_idx}: {e}")
+                continue
+
+        # Remove duplicates (reactions might appear in multiple T_i)
+        unique_reactions = []
+        seen_vectors = set()
+
+        for reaction in all_reactions:
+            # Convert to tuple for hashing
+            vector_tuple = tuple(reaction.vector)
+            if vector_tuple not in seen_vectors:
+                seen_vectors.add(vector_tuple)
+                unique_reactions.append(reaction)
+
+        return unique_reactions
 
     def check_on_target_detailed_balance(self, reactions: List[Reaction]) -> Optional[Reaction]:
         """

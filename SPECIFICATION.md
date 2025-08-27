@@ -82,7 +82,11 @@ The polymer basis is conceptually the set of "unsplittable" polymers, the polyme
 
 First, we need to make sure that for every binding site x, there is a column in A consisting of all zeros and a "-1" in the position corresponding to x. This is intuitively equivalent to having a singleton monomer {x*} in the TBN. If there are some binding sites for which such a singleton monomer does not exist in the TBN, then we add these columns to A as if we had more monomers. Importantly, we need to keep track of how many monomers we had originally, so that we can remove these fake added monomers later. Call this modified matrix A'. 
 
-Now we want to find the Hilbert basis of the cone corresponding to solutions of A'.x = 0. We do this using `Normaliz`. Let H be the Hilbert basis output by Normaliz for this problem. To get the *polymer basis*, we remove the last entries of vectors in H corresponding to the "fake" singleton monomers (that we added to form A'), and remove any resulting duplicates in H. 
+Now we want to find the Hilbert basis of the cone corresponding to solutions of: 
+A'.x = 0
+x ≥ 0 
+We do this using `Normaliz`.  
+Let H be the Hilbert basis output by Normaliz for this problem. To get the *polymer basis*, we remove the last entries of vectors in H corresponding to the "fake" singleton monomers (that we added to form A'), and remove any resulting duplicates in H. 
 
 Important: The Hilbert basis H may be very large! There could be hundreds of thousands of vectors in H. Thus these operations need to be very efficient. 
 

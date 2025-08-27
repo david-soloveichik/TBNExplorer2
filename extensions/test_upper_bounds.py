@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from extensions.canonical_reactions import CanonicalReactionsComputer, Reaction
+from extensions.canonical_reactions import CanonicalReactionsComputer
 from extensions.ibot import IBOTAlgorithm
 from tbnexplorer2.model import TBN
 from tbnexplorer2.normaliz import NormalizRunner
@@ -183,13 +183,13 @@ c d
         """
         # Use the and_gate_noA.tbn system
         from pathlib import Path
-        
+
         # Get the path to the test files
         current_file = Path(__file__)
         extensions_dir = current_file.parent
         test_tbn = extensions_dir / "my_inputs" / "and_gate_noA.tbn"
         test_on_target = extensions_dir / "my_inputs" / "and_gate_noA_on-target.tbnpolys"
-        
+
         # Check if files exist, otherwise create them
         if not test_tbn.exists():
             tbn_content = """B: b1 b2
@@ -201,7 +201,7 @@ b2 c1 c2
 c1* c2*
 C: c1 c2"""
             test_tbn = self.create_test_tbn_file(tbn_content, "and_gate_noA.tbn")
-        
+
         if not test_on_target.exists():
             on_target_content = """B
 
@@ -235,7 +235,7 @@ C"""
         # Load on-target polymers from the file
         parser = TbnpolysParser(tbn)
         on_target_polymers_raw = parser.parse_file(test_on_target)
-        
+
         # Convert to polymer indices
         on_target_indices = set()
         for polymer_raw in on_target_polymers_raw:
@@ -243,7 +243,7 @@ C"""
             for multiplicity, monomer in polymer_raw:
                 monomer_idx = tbn.monomers.index(monomer)
                 counts[monomer_idx] += multiplicity
-            
+
             # Find index in polymer basis
             for i, polymer in enumerate(polymer_vectors):
                 if np.array_equal(counts, polymer):
@@ -279,13 +279,15 @@ C"""
             for idx, _ in products:
                 if idx in off_target_indices:
                     producible_off_target.add(idx)
-        
+
         if not producible_off_target:
             pytest.skip("No off-target polymers can be produced by canonical reactions")
 
         # Compute upper bounds for all producible off-target polymers
-        reactions_bounded = reactions_computer.compute_irreducible_canonical_reactions_for_targets(producible_off_target)
-        
+        reactions_bounded = reactions_computer.compute_irreducible_canonical_reactions_for_targets(
+            producible_off_target
+        )
+
         # If we're targeting ALL producible off-target polymers, we should get the same reactions
         # (or at least all reactions that produce any off-target)
         ibot_bounded = IBOTAlgorithm(tbn, polymer_vectors, on_target_indices, reactions_bounded)
