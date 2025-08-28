@@ -127,11 +127,10 @@ B * r = 0
 S * r ≥ 0
 e_i * r > 0
 where B and S are as described above, and e_i selects p_i in r. 
-We use Normaliz with option "ModuleGeneratorsOverOriginalMonoid" to get the "module generators over the recession monoid". Call this T_i.
+We use 4ti2's `zsolve` to compute the minimal inhomogeneous solutions (module generators) for this system with strict inequality. Call this T_i.
 Repeat for next i.
-[Note for Claude: You can look at the documentation for Normaliz to understand how to compute for problems with strict inequalities and about ModuleGeneratorsOverOriginalMonoid (/Users/dsolov/Documents/ResearchTools/Normaliz/). But do not directly read the PDF file because it is too large; rather you can read the source for the documentation.]
 
-Our reduced set of canonical reaction is not the union of the T_i.
+Our reduced set of canonical reactions is now the union of the T_i.
 
 When we compute `μ(pi)` using this reduced set of reactions, we will get something that is a lower-bound on the true `μ(pi)`. This gives us an upper-bound on `(c'/ρH20)^μ(pi)` since mole fraction `c'/ρH20` is always less than 1.
 
@@ -156,7 +155,7 @@ This transformation implicitly enforces S*r ≥ 0 (no off-target reactants) beca
 To implement this functionality, we introduce an optional command line argument `--upper-bound-on-polymers {undesired_off_target}.tbnpolys` where the file is in .tbnpolys syntax specifying the p_i.
 
 When this option is used, we cannot use the option `--generate-tbn {c} {units}` since we do not know all the `μ(p)` for all off-target p.
-We also disable the option `--use-4ti2` since we focus on how Normaliz solves the strict inequality problem.
+The upper bounds computation itself always uses 4ti2's `zsolve` (regardless of the `--use-4ti2` flag), while `--use-4ti2` controls whether to use 4ti2 or Normaliz for the polymer basis computation.
 We can still use `--output-canonical-reactions` to show the relevant information for the reactions we generated in the new reduced way.
 
 To test the bounding functionality, we can add _all_ off-target polymers (that can be produced by some reaction from on-target polymers) to `{undesired_off_target}.tbnpolys`. Then if our implementation is correct, the concentration coefficients obtained should be _identical to_ (not just lower-bound) the case without `--upper-bound-on-polymers` option. As the test system for this, we can use files in `extensions/my_inputs/testing_bounding_IBOT/`:

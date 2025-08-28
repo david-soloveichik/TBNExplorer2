@@ -110,90 +110,22 @@ class NormalizRunner:
 
     def compute_module_generators_for_slice(self, equations: np.ndarray, slice_vector: np.ndarray) -> List[np.ndarray]:
         """
-        Compute module generators over original monoid for a slice.
+        Compute module generators for slice problems (not properly supported by Normaliz).
 
-        Computes the module generators of the slice:
-        { x >= 0 : equations * x = 0, slice_vector * x >= 1 }
-
-        This is specifically for finding reactions that produce a target polymer,
-        where slice_vector has 1 at the target polymer position and 0 elsewhere.
+        NOTE: Normaliz does not properly compute module generators over the original monoid
+        for problems with strict inequalities. Use 4ti2 instead for upper bounds computation.
 
         Args:
-            equations: Matrix defining linear equations (B matrix for mass conservation)
-            slice_vector: Row vector defining the slice (e.g., selecting a target polymer)
-
-        Returns:
-            List of module generator vectors
+            equations: Matrix defining linear equations
+            slice_vector: Row vector defining the slice
 
         Raises:
-            RuntimeError: If Normaliz execution fails
+            NotImplementedError: This functionality requires 4ti2
         """
-        # Create temporary directory for Normaliz files
-        with tempfile.TemporaryDirectory() as tmpdir:
-            input_file = os.path.join(tmpdir, "input.in")
-
-            # Write Normaliz input file for module generators
-            self._write_normaliz_input_for_module_generators(equations, slice_vector, input_file)
-
-            # Run Normaliz
-            output_file = self._run_normaliz(input_file)
-
-            # Parse module generators from output
-            module_generators = self._parse_module_generators(output_file)
-
-        return module_generators
-
-    def _write_normaliz_input_for_module_generators(
-        self, equations: np.ndarray, slice_vector: np.ndarray, filepath: str
-    ):
-        """
-        Write Normaliz input file for computing module generators for a slice.
-
-        We solve: { x >= 0 : equations * x = 0, slice * x >= 1 }
-        This represents reactions that conserve mass and produce at least one target polymer.
-
-        Args:
-            equations: Matrix of equations (each row is an equation)
-            slice_vector: Row vector defining the slice (positivity constraint)
-            filepath: Path to write input file
-        """
-        n_variables = equations.shape[1]
-
-        with open(filepath, "w") as f:
-            f.write("/* Normaliz input for Hilbert basis with strict inequality */\n\n")
-
-            # Specify ambient space dimension
-            f.write(f"amb_space {n_variables}\n\n")
-
-            # Write equations if any
-            if equations.shape[0] > 0:
-                f.write(f"equations {equations.shape[0]}\n")
-                for row in equations:
-                    f.write(" ".join(str(int(val)) for val in row) + "\n")
-                f.write("\n")
-
-            # Use strict_inequalities to enforce slice * x >= 1
-            # This ensures the target polymer must be produced
-            f.write("strict_inequalities 1\n")
-            f.write(" ".join(str(int(val)) for val in slice_vector) + "\n")
-            f.write("\n")
-
-            # Request Hilbert basis computation for the slice
-            # This gives us all solutions, not just module generators
-            f.write("HilbertBasis\n")
-
-    def _parse_module_generators(self, output_file: str) -> List[np.ndarray]:
-        """
-        Parse module generators (Hilbert basis) from Normaliz output file.
-
-        Args:
-            output_file: Path to Normaliz output file
-
-        Returns:
-            List of module generator vectors as numpy arrays
-        """
-        # Use the existing Hilbert basis parser since we're now computing Hilbert basis
-        return self._parse_hilbert_basis(output_file)
+        raise NotImplementedError(
+            "Normaliz does not properly support module generators for strict inequality problems. "
+            "Please use 4ti2 (--use-4ti2) for upper bounds computation."
+        )
 
     def _write_normaliz_input_with_strict(
         self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray, filepath: str

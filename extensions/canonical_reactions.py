@@ -369,10 +369,10 @@ class CanonicalReactionsComputer:
         if invalid_indices:
             raise ValueError(f"Target polymer indices out of range: {invalid_indices}")
 
-        if self.use_4ti2:
-            raise ValueError("Upper bound computation requires Normaliz (--use-4ti2 not supported)")
-
-        runner = NormalizRunner()
+        # For upper bounds computation, we must always use 4ti2 as Normaliz doesn't properly support
+        # module generators for strict inequality problems
+        # Note: self.use_4ti2 controls polymer basis computation, but upper bounds always needs 4ti2
+        runner = FourTiTwoRunner()
 
         # We'll compute module generators for each target polymer separately
         # and combine the results (union of T_i)

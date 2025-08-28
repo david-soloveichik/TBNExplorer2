@@ -210,6 +210,116 @@ class FourTiTwoRunner:
         # zsolve output format is similar to hilbert
         return self._parse_hilbert_output(output_file)
 
+    def compute_module_generators_for_slice(self, equations: np.ndarray, slice_vector: np.ndarray) -> List[np.ndarray]:
+        """
+        Compute module generators over original monoid for a slice using 4ti2's zsolve.
+
+        Computes the minimal inhomogeneous solutions (module generators) of:
+        { x >= 0 : equations * x = 0, slice_vector * x >= 1 }
+
+        This is used for finding reactions that produce a target polymer,
+        where slice_vector has 1 at the target polymer position and 0 elsewhere.
+
+        Args:
+            equations: Matrix defining linear equations (B matrix for mass conservation)
+            slice_vector: Row vector defining the slice (e.g., selecting a target polymer)
+
+        Returns:
+            List of module generator vectors
+
+        Raises:
+            RuntimeError: If 4ti2 execution fails
+        """
+        # Create temporary directory for 4ti2 files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_name = os.path.join(tmpdir, "slice")
+
+            # Write 4ti2 input files for the slice problem
+            self._write_zsolve_slice_input(equations, slice_vector, base_name)
+
+            # Run zsolve
+            try:
+                result = subprocess.run(
+                    [self.zsolve_executable, base_name], capture_output=True, text=True, check=False
+                )
+
+                if result.returncode != 0:
+                    raise RuntimeError(f"4ti2 zsolve failed: {result.stderr}")
+
+                # Parse the inhomogeneous solutions (.zinhom file)
+                output_file = base_name + ".zinhom"
+
+                if not os.path.exists(output_file):
+                    # No inhomogeneous solutions found (empty result)
+                    return []
+
+                # Parse module generators from output
+                module_generators = self._parse_zsolve_output(output_file)
+
+            except FileNotFoundError as e:
+                raise RuntimeError(
+                    f"4ti2 zsolve executable not found at '{self.zsolve_executable}'. "
+                    f"Please install 4ti2 or update FOURTI2_PATH"
+                ) from e
+
+        return module_generators
+
+    def _write_zsolve_slice_input(self, equations: np.ndarray, slice_vector: np.ndarray, base_name: str):
+        """
+        Write 4ti2 zsolve input files for computing module generators for a slice.
+
+        We solve: { x >= 0 : equations * x = 0, slice * x >= 1 }
+
+        According to the 4ti2 documentation format:
+        - .mat file: coefficient matrix (equations followed by slice row)
+        - .rel file: relation types ('=' for equations, '>' for slice inequality)
+        - .rhs file: right-hand sides (0s for equations, 1 for slice)
+        - .sign file: variable sign restrictions (0 for free variables)
+
+        Args:
+            equations: Matrix of equations (each row is an equation)
+            slice_vector: Row vector defining the slice
+            base_name: Base path for input files (without extension)
+        """
+        n_equations, n_variables = equations.shape
+
+        # Total number of rows: equations + slice constraint
+        n_rows = n_equations + 1
+
+        # Write the .mat file (coefficient matrix)
+        mat_file = base_name + ".mat"
+        with open(mat_file, "w") as f:
+            f.write(f"{n_rows} {n_variables}\n")
+            # Write equation rows
+            for row in equations:
+                f.write(" ".join(str(int(val)) for val in row) + "\n")
+            # Write slice row
+            f.write(" ".join(str(int(val)) for val in slice_vector) + "\n")
+
+        # Write the .rel file (relation types)
+        rel_file = base_name + ".rel"
+        with open(rel_file, "w") as f:
+            f.write(f"1 {n_rows}\n")
+            # '=' for equations, '>' for slice inequality
+            relations = ["="] * n_equations + [">"]
+            f.write(" ".join(relations) + "\n")
+
+        # Write the .rhs file (right-hand sides)
+        rhs_file = base_name + ".rhs"
+        with open(rhs_file, "w") as f:
+            f.write(f"1 {n_rows}\n")
+            # 0 for equations, 1 for slice constraint
+            rhs_values = ["0"] * n_equations + ["1"]
+            f.write(" ".join(rhs_values) + "\n")
+
+        # Write the .sign file (variable sign restrictions)
+        # Use 1 for non-negative variables (since we're in lifted space)
+        # This ensures all variables are >= 0
+        sign_file = base_name + ".sign"
+        with open(sign_file, "w") as f:
+            f.write(f"1 {n_variables}\n")
+            f.write(" ".join("1" for _ in range(n_variables)) + "\n")
+
     def check_fourtitwo_available(self) -> bool:
         """
         Check if 4ti2 is available at the configured path.

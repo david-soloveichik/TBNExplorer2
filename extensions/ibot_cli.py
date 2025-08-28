@@ -53,7 +53,10 @@ def main():
         "--upper-bound-on-polymers",
         type=str,
         metavar="TBNPOLYS_FILE",
-        help="Compute upper bounds only for specific off-target polymers listed in this .tbnpolys file (requires Normaliz, incompatible with --use-4ti2 and --generate-tbn)",
+        help="Compute upper bounds only for specific off-target polymers listed in this .tbnpolys file. "
+        "Note: The upper bounds computation itself always uses 4ti2 (regardless of --use-4ti2), "
+        "while --use-4ti2 controls whether to use 4ti2 or Normaliz for the polymer basis. "
+        "Incompatible with --generate-tbn.",
     )
 
     args = parser.parse_args()
@@ -75,12 +78,6 @@ def main():
         upper_bound_path = Path(args.upper_bound_on_polymers)
         if not upper_bound_path.exists():
             print(f"Error: Upper bound polymers file not found: {upper_bound_path}", file=sys.stderr)
-            sys.exit(1)
-
-        if args.use_4ti2:
-            print(
-                "Error: --upper-bound-on-polymers requires Normaliz (cannot be used with --use-4ti2)", file=sys.stderr
-            )
             sys.exit(1)
 
         if args.generate_tbn:
