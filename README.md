@@ -127,10 +127,14 @@ tbnexplorer2-ibot input.tbn on_target.tbnpolys [options]
 
 Options:
   --normaliz-path PATH              Path to Normaliz executable
-  --use-4ti2                        Use 4ti2 instead of Normaliz for both Hilbert basis computations
+  --use-4ti2                        Use 4ti2 instead of Normaliz for polymer basis computation
   --4ti2-path PATH                  Path to 4ti2 installation directory
   --generate-tbn CONC UNITS         Generate .tbn file with computed concentrations
                                     (e.g., --generate-tbn 0.01 nM)
+  --upper-bound-on-polymers FILE    Compute upper bounds only for specific off-target polymers
+                                    listed in .tbnpolys file (incompatible with --generate-tbn)
+  --output-canonical-reactions      Generate text file showing irreducible canonical reactions
+                                    (shows reduced set when used with --upper-bound-on-polymers)
   -v, --verbose                     Enable verbose output
 ```
 
@@ -147,7 +151,9 @@ Options:
 
 **Outputs:**
 
-- `input-ibot-output.tbnpolys`: All polymers with concentration exponents (μ values)
+- `input-ibot.tbnpolys`: All polymers with concentration exponents (μ values)
+- `input-ibot-upper-bounds.tbnpolys`: Polymers with upper bound concentration exponents (if --upper-bound-on-polymers used)
+- `input-ibot-reactions.txt`: Irreducible canonical reactions (if --output-canonical-reactions used)
 - `input-ibot-cX.tbn`: Generated TBN file with concentrations (if --generate-tbn used)
 
 ## TBN File Format (.tbn)
@@ -290,6 +296,31 @@ The IBOT algorithm assigns concentration exponents to polymers to maintain detai
    - **Imbalance**: Difference in concentration exponents between reactants and products
    - **Imbalance-novelty ratio**: Used to determine assignment priority
 3. Polymers unreachable from on-target reactions are excluded
+
+### Upper Bounds for Specific Off-Target Polymers
+
+For large systems where computing all irreducible canonical reactions is infeasible, IBOT can efficiently compute upper bounds on concentrations of specific undesired off-target polymers.
+
+**How it works:**
+
+Instead of generating all irreducible canonical reactions, the algorithm:
+1. Focuses only on reactions that directly produce the specified target polymers
+2. Uses 4ti2's zsolve to compute minimal inhomogeneous solutions for each target
+3. Computes concentration exponents using this reduced set of reactions
+4. Results in lower bounds on μ values, which translate to upper bounds on concentrations
+
+**Usage:**
+
+```bash
+# Compute upper bounds for specific off-target polymers
+tbnexplorer2-ibot system.tbn on_target.tbnpolys \
+  --upper-bound-on-polymers undesired.tbnpolys \
+  --output-canonical-reactions  # Shows only reactions producing the target polymers
+```
+
+**Notes:** 
+- This option is incompatible with `--generate-tbn` since we don't compute concentration exponents for all polymers
+- When used with `--output-canonical-reactions`, only the reduced set of reactions that produce the target polymers is shown
 
 **Example Workflow:**
 
