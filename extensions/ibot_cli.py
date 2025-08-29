@@ -54,8 +54,7 @@ def main():
         type=str,
         metavar="TBNPOLYS_FILE",
         help="Compute upper bounds only for specific off-target polymers listed in this .tbnpolys file. "
-        "Note: The upper bounds computation itself always uses 4ti2 (regardless of --use-4ti2), "
-        "while --use-4ti2 controls whether to use 4ti2 or Normaliz for the polymer basis. "
+        "Could be much faster than full computation for large systems. "
         "Incompatible with --generate-tbn.",
     )
 
