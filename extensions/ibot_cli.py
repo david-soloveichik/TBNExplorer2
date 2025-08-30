@@ -54,8 +54,14 @@ def main():
         type=str,
         metavar="TBNPOLYS_FILE",
         help="Compute upper bounds only for specific off-target polymers listed in this .tbnpolys file. "
-        "Could be much faster than full computation for large systems. "
+        "Note: This functionality is not yet optimized and might take longer than enumerating all canonical reactions. "
         "Incompatible with --generate-tbn.",
+    )
+
+    parser.add_argument(
+        "--store-solver-inputs",
+        action="store_true",
+        help="Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging",
     )
 
     args = parser.parse_args()
@@ -113,14 +119,18 @@ def main():
             runner = NormalizRunner()
             print("Using Normaliz for Hilbert basis computation")
 
-        basis_computer = PolymerBasisComputer(tbn, runner)
+        basis_computer = PolymerBasisComputer(
+            tbn, runner, store_solver_inputs=args.store_solver_inputs, input_base_name=tbn_path.stem
+        )
         polymers = basis_computer.compute_polymer_basis()
         polymer_vectors = [p.monomer_counts for p in polymers]
         print(f"Found {len(polymers)} polymers in the basis")
 
         # Step 3: Set up canonical reactions computation
         print("Setting up canonical reactions computation...")
-        reactions_computer = CanonicalReactionsComputer(tbn, use_4ti2=args.use_4ti2)
+        reactions_computer = CanonicalReactionsComputer(
+            tbn, use_4ti2=args.use_4ti2, store_solver_inputs=args.store_solver_inputs, input_base_name=tbn_path.stem
+        )
 
         # Load on-target polymers
         on_target_indices = reactions_computer.load_on_target_polymers(on_target_path, polymer_vectors)

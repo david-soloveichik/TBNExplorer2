@@ -1,7 +1,9 @@
 import os
+import shutil
 import subprocess
 import tempfile
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 
@@ -20,12 +22,21 @@ class NormalizRunner:
         """
         self.normaliz_path = normaliz_path
 
-    def compute_hilbert_basis(self, matrix: np.ndarray) -> List[np.ndarray]:
+    def compute_hilbert_basis(
+        self,
+        matrix: np.ndarray,
+        store_inputs: bool = False,
+        input_base_name: Optional[str] = None,
+        context: str = "hilbert-basis",
+    ) -> List[np.ndarray]:
         """
         Compute Hilbert basis of the cone {x >= 0 : matrix * x = 0}.
 
         Args:
             matrix: Matrix defining the linear equations
+            store_inputs: If True, store input files in solver-inputs directory
+            input_base_name: Base name for stored input files (e.g., input TBN filename)
+            context: Context string for stored files (e.g., "polymer-basis", "canonical-reactions")
 
         Returns:
             List of Hilbert basis vectors
@@ -39,6 +50,10 @@ class NormalizRunner:
 
             # Write Normaliz input file
             self._write_normaliz_input(matrix, input_file)
+
+            # Store input files if requested
+            if store_inputs and input_base_name:
+                self._store_solver_inputs(input_file, input_base_name, context)
 
             # Run Normaliz
             output_file = self._run_normaliz(input_file)
@@ -239,3 +254,23 @@ class NormalizRunner:
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
+
+    def _store_solver_inputs(self, input_file: str, base_name: str, context: str):
+        """
+        Store a copy of the solver input file for debugging.
+
+        Args:
+            input_file: Path to the temporary input file
+            base_name: Base name for the output file (e.g., input TBN filename)
+            context: Context string (e.g., "polymer-basis", "canonical-reactions")
+        """
+        # Create solver-inputs directory if it doesn't exist
+        solver_dir = Path("solver-inputs")
+        solver_dir.mkdir(exist_ok=True)
+
+        # Create descriptive filename
+        output_name = f"{base_name}-{context}-normaliz.in"
+        output_path = solver_dir / output_name
+
+        # Copy the input file
+        shutil.copy2(input_file, output_path)

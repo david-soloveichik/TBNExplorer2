@@ -224,3 +224,5 @@ When a parametrized .tbn file is processed, the used parameter values are stored
 The `tbnexplorer2-filter` command automatically reads parameters from the .tbnpolymat file when present. This ensures that filtering operations work correctly with parametrized .tbn files without requiring the user to re-specify the parameter values.
 
 
+# Debugging Normaliz and 4ti2 tool calls
+To aid debugging, we have the optional `--store-solver-inputs` parameter. This should create a `solver-inputs` subdirectory (if one doesn't exist) and copy all input files for Normaliz and 4ti2. This copy should occur prior to *each* call to Normaliz and 4ti2 (e.g., for computing the polymer basis, for computing irreducible canonical reactions in the extensions, etc.) The filenames should have the form `{base}...` where `{base}` is the input .tbn file name. The `...` should include information about which call this is (eg for computing the polymer basis or something else).

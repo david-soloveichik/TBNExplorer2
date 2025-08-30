@@ -1,7 +1,9 @@
 import os
+import shutil
 import subprocess
 import tempfile
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 
@@ -22,12 +24,21 @@ class FourTiTwoRunner:
         self.hilbert_executable = os.path.join(fourtitwo_path, "bin", "hilbert")
         self.zsolve_executable = os.path.join(fourtitwo_path, "bin", "zsolve")
 
-    def compute_hilbert_basis(self, matrix: np.ndarray) -> List[np.ndarray]:
+    def compute_hilbert_basis(
+        self,
+        matrix: np.ndarray,
+        store_inputs: bool = False,
+        input_base_name: Optional[str] = None,
+        context: str = "hilbert-basis",
+    ) -> List[np.ndarray]:
         """
         Compute Hilbert basis of the cone {x >= 0 : matrix * x = 0}.
 
         Args:
             matrix: Matrix defining the linear equations
+            store_inputs: If True, store input files in solver-inputs directory
+            input_base_name: Base name for stored input files (e.g., input TBN filename)
+            context: Context string for stored files (e.g., "polymer-basis", "canonical-reactions")
 
         Returns:
             List of Hilbert basis vectors
@@ -41,6 +52,10 @@ class FourTiTwoRunner:
 
             # Write 4ti2 input files
             self._write_fourtitwo_input(matrix, base_name)
+
+            # Store input files if requested
+            if store_inputs and input_base_name:
+                self._store_solver_inputs(base_name, input_base_name, context)
 
             # Try hilbert first, fall back to zsolve if needed
             try:
@@ -210,7 +225,14 @@ class FourTiTwoRunner:
         # zsolve output format is similar to hilbert
         return self._parse_hilbert_output(output_file)
 
-    def compute_module_generators_for_slice(self, equations: np.ndarray, slice_vector: np.ndarray) -> List[np.ndarray]:
+    def compute_module_generators_for_slice(
+        self,
+        equations: np.ndarray,
+        slice_vector: np.ndarray,
+        store_inputs: bool = False,
+        input_base_name: Optional[str] = None,
+        context: str = "module-generators",
+    ) -> List[np.ndarray]:
         """
         Compute module generators over original monoid for a slice using 4ti2's zsolve.
 
@@ -223,6 +245,9 @@ class FourTiTwoRunner:
         Args:
             equations: Matrix defining linear equations (B matrix for mass conservation)
             slice_vector: Row vector defining the slice (e.g., selecting a target polymer)
+            store_inputs: If True, store input files in solver-inputs directory
+            input_base_name: Base name for stored input files (e.g., input TBN filename)
+            context: Context string for stored files (e.g., "upper-bounds-target-1")
 
         Returns:
             List of module generator vectors
@@ -236,6 +261,10 @@ class FourTiTwoRunner:
 
             # Write 4ti2 input files for the slice problem
             self._write_zsolve_slice_input(equations, slice_vector, base_name)
+
+            # Store input files if requested
+            if store_inputs and input_base_name:
+                self._store_solver_inputs(base_name, input_base_name, context, is_zsolve=True)
 
             # Run zsolve
             try:
@@ -331,3 +360,30 @@ class FourTiTwoRunner:
         hilbert_available = os.path.exists(self.hilbert_executable) and os.access(self.hilbert_executable, os.X_OK)
         zsolve_available = os.path.exists(self.zsolve_executable) and os.access(self.zsolve_executable, os.X_OK)
         return hilbert_available or zsolve_available
+
+    def _store_solver_inputs(self, base_name: str, input_base_name: str, context: str, is_zsolve: bool = False):
+        """
+        Store copies of the 4ti2 input files for debugging.
+
+        Args:
+            base_name: Base path of the temporary input files (without extension)
+            input_base_name: Base name for the output files (e.g., input TBN filename)
+            context: Context string (e.g., "polymer-basis", "canonical-reactions")
+            is_zsolve: If True, copy zsolve-specific files; otherwise copy hilbert files
+        """
+        # Create solver-inputs directory if it doesn't exist
+        solver_dir = Path("solver-inputs")
+        solver_dir.mkdir(exist_ok=True)
+
+        # List of file extensions to copy
+        extensions = [".mat", ".sign", ".rel"]
+        if is_zsolve:
+            extensions.append(".rhs")  # For inhomogeneous systems
+
+        # Copy each input file
+        for ext in extensions:
+            source = f"{base_name}{ext}"
+            if os.path.exists(source):
+                output_name = f"{input_base_name}-{context}-4ti2{ext}"
+                output_path = solver_dir / output_name
+                shutil.copy2(source, output_path)

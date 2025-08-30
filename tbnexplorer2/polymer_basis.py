@@ -95,16 +95,26 @@ class Polymer:
 class PolymerBasisComputer:
     """Computes the polymer basis (Hilbert basis) for a TBN."""
 
-    def __init__(self, tbn: TBN, normaliz_runner: Optional[NormalizRunner] = None):
+    def __init__(
+        self,
+        tbn: TBN,
+        normaliz_runner: Optional[NormalizRunner] = None,
+        store_solver_inputs: bool = False,
+        input_base_name: Optional[str] = None,
+    ):
         """
         Initialize the polymer basis computer.
 
         Args:
             tbn: The TBN model
             normaliz_runner: Optional NormalizRunner instance (creates default if None)
+            store_solver_inputs: If True, store input files for debugging
+            input_base_name: Base name for stored input files
         """
         self.tbn = tbn
         self.normaliz_runner = normaliz_runner or NormalizRunner()
+        self.store_solver_inputs = store_solver_inputs
+        self.input_base_name = input_base_name
 
     def compute_polymer_basis(self) -> List[Polymer]:
         """
@@ -124,7 +134,12 @@ class PolymerBasisComputer:
 
         # Compute Hilbert basis using Normaliz
         # We want solutions to A' * x = 0 with x >= 0
-        hilbert_basis_vectors = self.normaliz_runner.compute_hilbert_basis(A_prime)
+        hilbert_basis_vectors = self.normaliz_runner.compute_hilbert_basis(
+            A_prime,
+            store_inputs=self.store_solver_inputs,
+            input_base_name=self.input_base_name,
+            context="polymer-basis",
+        )
 
         if not hilbert_basis_vectors:
             raise RuntimeError("No Hilbert basis vectors found")

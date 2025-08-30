@@ -91,16 +91,22 @@ class CanonicalReactionsComputer:
     This approach implicitly enforces S*r >= 0 without needing the S matrix explicitly.
     """
 
-    def __init__(self, tbn: TBN, use_4ti2: bool = False):
+    def __init__(
+        self, tbn: TBN, use_4ti2: bool = False, store_solver_inputs: bool = False, input_base_name: Optional[str] = None
+    ):
         """
         Initialize the canonical reactions computer.
 
         Args:
             tbn: The TBN model
             use_4ti2: Whether to use 4ti2 instead of Normaliz
+            store_solver_inputs: If True, store input files for debugging
+            input_base_name: Base name for stored input files
         """
         self.tbn = tbn
         self.use_4ti2 = use_4ti2
+        self.store_solver_inputs = store_solver_inputs
+        self.input_base_name = input_base_name
         self.polymers = None
         self.on_target_indices = None
         self.off_target_indices = None
@@ -302,7 +308,12 @@ class CanonicalReactionsComputer:
             B_lifted[:, 2 * n_on_target + i] = self.B_matrix[:, p]
 
         # Compute Hilbert basis of { x >= 0 : B_lifted * x = 0 }
-        hilbert_basis = runner.compute_hilbert_basis(B_lifted)
+        hilbert_basis = runner.compute_hilbert_basis(
+            B_lifted,
+            store_inputs=self.store_solver_inputs,
+            input_base_name=self.input_base_name,
+            context="canonical-reactions",
+        )
 
         if not hilbert_basis:
             return []
@@ -425,7 +436,17 @@ class CanonicalReactionsComputer:
 
             # Compute module generators for this slice
             try:
-                module_gens = runner.compute_module_generators_for_slice(B_lifted, slice_vector)
+                # Find the off-target polymer index in the list for context naming
+                off_target_idx = off_target_list.index(target_idx)
+                context = f"upper-bounds-target-{off_target_idx}"
+
+                module_gens = runner.compute_module_generators_for_slice(
+                    B_lifted,
+                    slice_vector,
+                    store_inputs=self.store_solver_inputs,
+                    input_base_name=self.input_base_name,
+                    context=context,
+                )
 
                 # Convert module generators from lifted space back to reaction vectors
                 for h_vector in module_gens:

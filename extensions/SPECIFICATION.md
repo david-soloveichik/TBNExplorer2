@@ -146,7 +146,7 @@ This transformation implicitly enforces S*r ≥ 0 (no off-target reactants) beca
 - Off-target polymers are constrained to r ≥ 0, so they can only appear as products (positive values)
 - On-target polymers can be positive or negative, allowing them to be reactants or products
 
-**Why this approach?** Variable splitting is more efficient for Hilbert basis computation as it:
+**Why this approach?** Variable splitting is more efficient as it:
 
 - Avoids constructing the large S matrix explicitly
 - Reduces the number of inequality constraints

@@ -105,6 +105,12 @@ TBN File Format:
         help="Variable assignments for parametrized .tbn files (e.g., a=20 b=100.4)",
     )
 
+    parser.add_argument(
+        "--store-solver-inputs",
+        action="store_true",
+        help="Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging",
+    )
+
     args = parser.parse_args()
 
     # Validate input file
@@ -194,7 +200,9 @@ TBN File Format:
                 print("Using Normaliz for Hilbert basis computation")
 
         # Try to load cached polymer basis first
-        computer = PolymerBasisComputer(tbn, solver_runner)
+        computer = PolymerBasisComputer(
+            tbn, solver_runner, store_solver_inputs=args.store_solver_inputs, input_base_name=base_name
+        )
         polymers = computer.load_cached_polymer_basis(polymat_file)
 
         if polymers is not None:

@@ -89,6 +89,7 @@ Options:
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)
   --parametrized var1=val1 ...      Provide values for template variables in .tbn file
+  --store-solver-inputs             Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging
   -v, --verbose                     Enable verbose output
 ```
 
@@ -133,8 +134,11 @@ Options:
                                     (e.g., --generate-tbn 0.01 nM)
   --upper-bound-on-polymers FILE    Compute upper bounds only for specific off-target polymers
                                     listed in .tbnpolys file (incompatible with --generate-tbn)
+                                    Note: This functionality is not yet optimized and might take
+                                    longer than enumerating all canonical reactions
   --output-canonical-reactions      Generate text file showing irreducible canonical reactions
                                     (shows reduced set when used with --upper-bound-on-polymers)
+  --store-solver-inputs             Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging
   -v, --verbose                     Enable verbose output
 ```
 
