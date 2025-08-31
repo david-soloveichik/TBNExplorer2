@@ -119,20 +119,34 @@ Often we are only interested in an upper bound on the concentrations of some spe
 In particular, for large systems, the generation of all irreducible canonical reactions (by Normaliz or 4ti2) takes too long or is completely infeasible.
 Rather than generating the exact equilibrium concentrations via the IBOT algorithm, we can much more more efficiently compute an upper bound on the p_i by narrowing our focus to reactions that directly produce some p_i instead of examining the full set of irreducible canonical reactions.  
 
-The way we do this is to change the linear problem that we use the generate the irreducible canonical reactions. Suppose we want an upper bound on off-target polymers p_1, ..., p_k. 
+## Mathematical background
+
+Let P = all canonical reactions producing a given undesired polymer p.
+We want to generate a subset T of P with the following properties:
+
+1. Every x \in P can be written as:
+    u + v
+    where u \in T,
+    and v is some _canonical reaction_ (possibly zero)
+2. T is minimal in the sense that:
+    For every u \in T, there do not exist a canonical reaction u' that produces p
+    and some canonical reaction v \neq 0 such that:
+    u = u' + v.
+
+The way we find such a T for each undesired polymer p_i (separately) is via the following linear problem:
 
 For each p_i we do the following:
 Construct the linear system:
 B * r = 0
 S * r ≥ 0
-e_i * r > 0
+e_i * r > 0  (equivalently, e_i * r ≥ 1 over integers)
 where B and S are as described above, and e_i selects p_i in r. 
 We use 4ti2's `zsolve` to compute the minimal inhomogeneous solutions (module generators) for this system with strict inequality. Call this T_i.
 Repeat for next i.
 
-Our reduced set of canonical reactions is now the union of the T_i.
+I claim that each T_i satisfies the two properties above.
 
-When we compute `μ(pi)` using this reduced set of reactions, we will get something that is a lower-bound on the true `μ(pi)`. This gives us an upper-bound on `(c'/ρH20)^μ(pi)` since mole fraction `c'/ρH20` is always less than 1.
+Our reduced set of canonical reactions is now the union of the T_i. When we compute `μ(pi)` using this reduced set of reactions, we will get something that is a lower-bound on the true `μ(pi)`. This gives us an upper-bound on `(c'/ρH20)^μ(pi)` since mole fraction `c'/ρH20` is always less than 1.
 
 ## Implementation Note: Variable Splitting Instead of Explicit S Matrix
 
