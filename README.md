@@ -321,15 +321,13 @@ The IBOT algorithm assigns concentration exponents to polymers to maintain detai
 
 ### Upper Bounds for Specific Off-Target Polymers
 
-For large systems where computing all irreducible canonical reactions is infeasible, IBOT can efficiently compute upper bounds on concentrations of specific undesired off-target polymers.
+For large systems where computing all irreducible canonical reactions is infeasible, IBOT can more efficiently compute upper bounds on concentrations of specific undesired off-target polymers.
+
+Note: Current implementation of upper bounds is not more efficient in practice, and is a work in progress.
 
 **How it works:**
 
-Instead of generating all irreducible canonical reactions, the algorithm:
-1. Focuses only on reactions that directly produce the specified target polymers
-2. Uses 4ti2's zsolve to compute minimal inhomogeneous solutions for each target
-3. Computes concentration exponents using this reduced set of reactions
-4. Results in lower bounds on μ values, which translate to upper bounds on concentrations
+Instead of generating all irreducible canonical reactions, the algorithm focuses only on reactions that directly produce the specified target polymers. Specifically, it uses 4ti2's zsolve to compute minimal inhomogeneous solutions for each undesired off-target polymer. It then computes concentration exponents using this reduced set of reactions. This results in lower bounds on μ values, which translate to upper bounds on concentrations
 
 **Usage:**
 
