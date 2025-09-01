@@ -17,3 +17,4 @@ if env_file.exists():
 NORMALIZ_PATH = os.environ.get("NORMALIZ_PATH", "normaliz")
 COFFEE_CLI_PATH = os.environ.get("COFFEE_CLI_PATH", "coffee-cli")
 FOURTI2_PATH = os.environ.get("FOURTI2_PATH", "4ti2")
+NUPACK_CONCENTRATIONS_PATH = os.environ.get("NUPACK_CONCENTRATIONS_PATH", "concentrations")

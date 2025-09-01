@@ -131,6 +131,13 @@ Important: For systems of interest, the polymer basis can be quite large (hundre
 ### Optional temperature parameter
 `tbnexplorer2` should take an optional `--temp <celsius>` parameter, which gets passed to `coffee-cli  --temp <celsius>`.
 
+### Option to use Nupack 3 concentrations solver instead of COFFEE
+Let's have an optional argument `--use-nupack-concentrations` to use Nupack's `concentrations` CLI tool instead of COFFEE to compute polymer concentrations. Path to `concentrations` is in .env as `NUPACK_CONCENTRATIONS_PATH`.
+
+Command line: `concentrations -T {temperature_in_C} {base}`. The tool takes input files in a similar format as COFFEE called {base}.ocx (containing the matrix of polymers) and {base}.con (containing the concentrations of all the monomers in units of Molar). The .ocx file is a tab-delimited file with the first column being the polymer id (line number), the second column being always 1, and then the monomer composition of the polymer as for COFFEE, concluding in the free energy of that polymer.
+
+After `concentration` is executed, {base}.eq is generated, which *adds* another column to the .ocx file (as last column) which contains the equilibrium concentrations of all the polymers in units of Molar.
+
 ## 4. Generate output TBN polymer matrix file
 This file should be in the same format at the CFE file for `coffee-cli` described above, with an additional column for the concentration of that polymer computed by `coffee-cli`. 
 The polymers should be **sorted** in order of decreasing concentration. 

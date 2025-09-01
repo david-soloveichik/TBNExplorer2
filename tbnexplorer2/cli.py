@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from .coffee import COFFEE_CLI_PATH, COFFEERunner
+from .config import NUPACK_CONCENTRATIONS_PATH
 from .fourtitwo import FOURTI2_PATH, FourTiTwoRunner
 from .model import TBN
 from .normaliz import NORMALIZ_PATH, NormalizRunner
@@ -40,6 +41,9 @@ Examples:
   
   # Specify temperature
   tbnexplorer2 example.tbn --temp 37
+  
+  # Use NUPACK instead of COFFEE for equilibrium calculations
+  tbnexplorer2 example.tbn --use-nupack-concentrations
   
   # Verbose output
   tbnexplorer2 example.tbn --verbose
@@ -128,7 +132,19 @@ TBN File Format:
         metavar=("dG_bond", "dG_assoc", "dH_assoc"),
         default=None,
         help="Free energy parameters in kcal/mol: dG_bond (per bond), dG_assoc and dH_assoc (for polymer size penalty). "
-             "Default: -1.0 per bond, no size penalty. Example: --deltaG -2.0 5.0 3.0",
+        "Default: -1.0 per bond, no size penalty. Example: --deltaG -2.0 5.0 3.0",
+    )
+
+    parser.add_argument(
+        "--use-nupack-concentrations",
+        action="store_true",
+        help="Use Nupack's concentrations solver instead of COFFEE for equilibrium calculations",
+    )
+
+    parser.add_argument(
+        "--nupack-path",
+        default=NUPACK_CONCENTRATIONS_PATH,
+        help=f"Path to Nupack concentrations executable (default: {NUPACK_CONCENTRATIONS_PATH})",
     )
 
     args = parser.parse_args()
@@ -250,14 +266,25 @@ TBN File Format:
         compute_free_energies = not args.no_free_energies
         compute_concentrations = not args.no_concentrations and compute_free_energies
 
-        # Check if COFFEE is available if needed
-        coffee_runner = None
+        # Check if concentration solver is available if needed
+        concentration_runner = None
         if compute_concentrations and tbn.concentrations is not None:
-            coffee_runner = COFFEERunner(args.coffee_path, temperature=args.temp)
-            if not coffee_runner.check_coffee_available():
-                print(f"Warning: COFFEE not found at '{args.coffee_path}', skipping concentration computation")
-                compute_concentrations = False
-                coffee_runner = None
+            if args.use_nupack_concentrations:
+                # Use NUPACK concentrations solver
+                from .nupack import NupackRunner
+
+                concentration_runner = NupackRunner(args.nupack_path, temperature=args.temp)
+                if not concentration_runner.check_nupack_available():
+                    print(f"Warning: NUPACK not found at '{args.nupack_path}', skipping concentration computation")
+                    compute_concentrations = False
+                    concentration_runner = None
+            else:
+                # Use COFFEE solver (default)
+                concentration_runner = COFFEERunner(args.coffee_path, temperature=args.temp)
+                if not concentration_runner.check_coffee_available():
+                    print(f"Warning: COFFEE not found at '{args.coffee_path}', skipping concentration computation")
+                    compute_concentrations = False
+                    concentration_runner = None
 
         # Save .tbnpolymat file
         computer.save_tbnpolymat(
@@ -265,7 +292,7 @@ TBN File Format:
             polymat_file,
             compute_free_energies=compute_free_energies,
             compute_concentrations=compute_concentrations,
-            coffee_runner=coffee_runner,
+            concentration_runner=concentration_runner,
             verbose=args.verbose,
             parameters=used_variables,
             deltaG=args.deltaG,
@@ -295,7 +322,10 @@ TBN File Format:
         elif tbn.concentrations is None:
             print("Note: No monomer concentrations provided, equilibrium concentrations not computed")
         elif not compute_concentrations:
-            print("Note: Equilibrium concentrations not computed (--no-concentrations flag or COFFEE unavailable)")
+            if args.use_nupack_concentrations:
+                print("Note: Equilibrium concentrations not computed (--no-concentrations flag or NUPACK unavailable)")
+            else:
+                print("Note: Equilibrium concentrations not computed (--no-concentrations flag or COFFEE unavailable)")
 
     except ValueError as e:
         print(f"Error parsing TBN file: {e}", file=sys.stderr)

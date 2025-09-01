@@ -125,7 +125,7 @@ class Polymer:
         """
         # Check if deltaG was explicitly provided
         use_association_penalty = deltaG is not None
-        
+
         if deltaG is None:
             deltaG = [-1.0, 0.0, 0.0]
 
@@ -347,7 +347,7 @@ class PolymerBasisComputer:
         output_file: str,
         compute_free_energies: bool = True,
         compute_concentrations: bool = True,
-        coffee_runner: Optional[COFFEERunner] = None,
+        concentration_runner: Optional[object] = None,
         verbose: bool = False,
         parameters: Optional[dict] = None,
         deltaG: Optional[List[float]] = None,
@@ -364,7 +364,7 @@ class PolymerBasisComputer:
             output_file: Path to output .tbnpolymat file
             compute_free_energies: Whether to compute and include free energies
             compute_concentrations: Whether to compute and include concentrations
-            coffee_runner: Optional COFFEERunner instance for concentration computation
+            concentration_runner: Optional COFFEERunner or NupackRunner instance for concentration computation
             verbose: Whether to enable verbose output
             parameters: Optional dictionary of parameters used for parametrized .tbn files
             deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
@@ -382,10 +382,10 @@ class PolymerBasisComputer:
         # Compute concentrations if requested and possible
         polymer_concentrations = None
         if include_concentrations:
-            if coffee_runner is None:
-                coffee_runner = COFFEERunner()
+            if concentration_runner is None:
+                concentration_runner = COFFEERunner()
             try:
-                polymer_concentrations = coffee_runner.compute_equilibrium_concentrations(
+                polymer_concentrations = concentration_runner.compute_equilibrium_concentrations(
                     polymers, self.tbn, deltaG=deltaG, temperature=temperature
                 )
                 if verbose:

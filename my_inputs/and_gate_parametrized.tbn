@@ -1,0 +1,11 @@
+\UNITS: nM
+
+A: a1 a2, {{inputA}}
+B: b1 b2, {{inputB}}
+a1* a2* b1* b2*, {{c}}
+a1 a2 b1 b2 c1, {{c}}
+a2* b1* b2* c1*, {{c}}
+a2 b1, {{c}}
+b2 c1 c2, {{c}}
+c1* c2*, {{c}}
+C: c1 c2, {{c}}

@@ -46,10 +46,13 @@ TBN Explorer also includes an extension for implementing the algorithm from [5] 
    - Download from: <https://github.com/Normaliz/Normaliz>
    - Configure path via `NORMALIZ_PATH` environment variable or `.env` file
    - You can also specify a custom path using the `--normaliz-path` option
-4. **COFFEE** - Tool for computing chemical equilibrium concentrations
+4. **COFFEE** - Tool for computing chemical equilibrium concentrations (default)
    - Configure path via `COFFEE_CLI_PATH` environment variable or `.env` file
    - Required for equilibrium concentration calculations
-5. **4ti2** (optional) - Alternative tool for computing Hilbert bases
+5. **NUPACK** (optional) - Alternative tool for computing equilibrium concentrations
+   - Configure path via `NUPACK_CONCENTRATIONS_PATH` environment variable or `.env` file
+   - Use with `--use-nupack-concentrations` flag as an alternative to COFFEE
+6. **4ti2** (optional) - Alternative tool for computing Hilbert bases
    - Download from: <https://4ti2.github.io/>
    - Configure path via `FOURTI2_PATH` environment variable or `.env` file
    - Use with `--use-4ti2` flag as an alternative to Normaliz
@@ -88,6 +91,8 @@ Options:
   --user-friendly-polymer-basis     Generate human-readable polymer basis file
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)
+  --use-nupack-concentrations       Use NUPACK instead of COFFEE for equilibrium calculations
+  --nupack-path PATH                Path to NUPACK concentrations executable
   --temp CELSIUS                    Temperature in Celsius (defaults to 37)
   --deltaG dG_bond dG_assoc dH_assoc  Free energy parameters in kcal/mol (see below)
   --parametrized var1=val1 ...      Provide values for template variables in .tbn file
@@ -513,6 +518,7 @@ This ensures the mathematical consistency of the concentration exponent assignme
 
 1. Build COFFEE from source (see COFFEE documentation)
 2. Set `COFFEE_CLI_PATH` in your `.env` file or environment
+3. Alternatively, use NUPACK with `--use-nupack-concentrations` flag
 
 ### Star-limiting Restriction Errors
 
