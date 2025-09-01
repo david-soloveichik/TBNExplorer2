@@ -257,19 +257,21 @@ class TestPolymerBasisComputer:
             polymer._free_energy = None
 
         # Compute free energies with custom deltaG = -2.5
-        deltaG = -2.5
+        # Using explicit deltaG will apply association penalty
+        deltaG = [-2.5, 0.0, 0.0]
         for polymer in polymers:
+            # Note: this will include association penalty due to water density term
             polymer.compute_free_energy(deltaG)
 
-        # Calculate expected free energies with deltaG = -2.5
-        # For polymer [1, 1, 0]: 2 bonds * deltaG = 2 * -2.5 = -5
-        assert polymers[0]._free_energy == -5.0
+        # Calculate expected free energies with deltaG = -2.5 and association penalty
+        # For polymer [1, 1, 0]: 2 monomers, 2 bonds * -2.5 = -5.0, plus association penalty
+        assert abs(polymers[0]._free_energy - (-7.471394)) < 1e-5
 
-        # For polymer [1, 0, 1]: 1 bond * deltaG = 1 * -2.5 = -2.5
-        assert polymers[1]._free_energy == -2.5
+        # For polymer [1, 0, 1]: 2 monomers, 1 bond * -2.5 = -2.5, plus association penalty
+        assert abs(polymers[1]._free_energy - (-4.971394)) < 1e-5
 
-        # For polymer [0, 2, 2]: 2 bonds * deltaG = 2 * -2.5 = -5
-        assert polymers[2]._free_energy == -5.0
+        # For polymer [0, 2, 2]: 4 monomers, 2 bonds * -2.5 = -5.0, plus association penalty
+        assert abs(polymers[2]._free_energy - (-12.414182)) < 1e-5
 
     def test_save_polymer_basis(self):
         """Test save_polymer_basis method with correct signature."""

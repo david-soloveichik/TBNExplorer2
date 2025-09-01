@@ -123,9 +123,12 @@ TBN File Format:
 
     parser.add_argument(
         "--deltaG",
+        nargs=3,
         type=float,
-        default=-1.0,
-        help="Free energy per bond (default: -1.0)",
+        metavar=("dG_bond", "dG_assoc", "dH_assoc"),
+        default=None,
+        help="Free energy parameters in kcal/mol: dG_bond (per bond), dG_assoc and dH_assoc (for polymer size penalty). "
+             "Default: -1.0 per bond, no size penalty. Example: --deltaG -2.0 5.0 3.0",
     )
 
     args = parser.parse_args()
@@ -266,6 +269,7 @@ TBN File Format:
             verbose=args.verbose,
             parameters=used_variables,
             deltaG=args.deltaG,
+            temperature=args.temp,
         )
 
         # Print summary

@@ -109,9 +109,14 @@ We can compute the number of bonds in polymer x as: (Sum[|A|.x] - Sum[A.x])/2, w
 Thus, intuitively, Sum[|A|.x] is the total number of binding sites in x (excluding self-binding within a monomer), and Sum[A.x] is the total excess of unstar binding sites. Subtracting the two gives twice the number of bonds formed (since each bond involves exactly 2 binding sites), so we divide by 2. 
 
 ### Optional deltaG parameter
-In the simple model described above (default behavior), the "free energy" of a bond is -1. If the optional `--deltaG <dG>` parameter is given to `tbnexplorer2`, then instead of -1 we should use `dG`. (Units of dG are kcal/mol as interpreted by COFFEE.)
-
-**Sanity check:** Changing bond `deltaG` alone should not change the equilibrium concentrations.
+In the simple model described above (default behavior), the "free energy" of a bond is -1 and there is no additional empirical penalty for forming large polymers. If the optional `--deltaG <dG_bond> <dG_assoc> <dH_assoc>` parameter is given to `tbnexplorer2`, then: 
+(1) instead of `-1` per bond we should use `dG_bond` per bond,
+(2) increase (i.e., make less negative) the free energy of each polymer by `assoc_energy_penalty` as computed in `/PLANNING/assoc_energy.py`. (The code in that file is for reference only, and the functionality should be copied to the appropriate place.) 
+Variable mapping:
+`total_monomers` = number of monomers in the polymer,
+`temp_C` = temperature in Celcius (default 37C, can be changed by `--temp` described below)
+`G_BIMOLECULAR` = `dG_assoc`, 
+`H_BIMOLECULAR` = `dH_assoc`.
 
 ## 3. Compute equilibrium polymer concentrations
 The big picture is that we want to compute the equilibrium concentrations of all the polymers in the polymer basis. We use the command line tool COFFEE for this.

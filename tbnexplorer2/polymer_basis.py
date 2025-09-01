@@ -1,3 +1,4 @@
+import math
 import os
 from typing import List, Optional, Tuple
 
@@ -9,6 +10,64 @@ from .normaliz import NormalizRunner
 from .polymat_io import PolymatData, PolymatWriter, check_matrix_hash
 from .tbnpolys_io import TbnpolysWriter
 from .units import from_molar, get_unit_display_name
+
+# Boltzmann constant in kcal/mol/K
+KB = 0.001987204259
+
+
+def _celcius_to_kelvin(temp_c: float) -> float:
+    """Convert temperature from Celsius to Kelvin."""
+    return temp_c + 273.15
+
+
+def _water_density_mol_per_L(temp_c: float) -> float:
+    """
+    Number of moles of water per liter at the given temperature.
+
+    Implements the Tanaka et al. correlation.
+    Reference: Tanaka M., Girard G., Davis R., Peuto A., Bignell N. (2001).
+    """
+    a1 = -3.983035
+    a2 = 301.797
+    a3 = 522_528.9
+    a4 = 69.34881
+    a5 = 999.974950
+
+    t = temp_c
+    # Density in g/L from the Tanaka correlation
+    density_g_per_L = a5 * (1.0 - (t + a1) * (t + a1) * (t + a2) / a3 / (t + a4))
+    # Convert to mol/L (molar mass of water = 18.0152 g/mol)
+    return density_g_per_L / 18.0152
+
+
+def _bimolecular(temp_c: float, G_BIMOLECULAR: float, H_BIMOLECULAR: float) -> float:
+    """Bimolecular association term (kcal/mol) as a function of temperature."""
+    water_density = _water_density_mol_per_L(temp_c)
+    temp_k = _celcius_to_kelvin(temp_c)
+
+    return (G_BIMOLECULAR - H_BIMOLECULAR) * temp_k / 310.15 + H_BIMOLECULAR - KB * temp_k * math.log(water_density)
+
+
+def compute_assoc_energy_penalty(
+    total_monomers: int,
+    temp_c: float,
+    G_BIMOLECULAR: float,
+    H_BIMOLECULAR: float,
+) -> float:
+    """
+    Compute the association energy penalty (kcal/mol).
+
+    Args:
+        total_monomers: Total number of monomers in the complex (>= 1).
+        temp_c: Temperature in degrees Celsius.
+        G_BIMOLECULAR: Empirical constant G (kcal/mol).
+        H_BIMOLECULAR: Empirical constant H (kcal/mol).
+        ( Nupack: G_BIMOLECULAR = 1.96, H_BIMOLECULAR = 0.20 )
+
+    Returns:
+        Association energy penalty in kcal/mol.
+    """
+    return _bimolecular(temp_c, G_BIMOLECULAR, H_BIMOLECULAR) * (total_monomers - 1)
 
 
 class Polymer:
@@ -42,11 +101,12 @@ class Polymer:
                 result.append((int(count), monomer))
         return result
 
-    def compute_free_energy(self, deltaG: float = -1.0) -> float:
+    def compute_free_energy(self, deltaG: Optional[List[float]] = None, temperature: float = 37.0) -> float:
         """
         Compute the free energy of this polymer.
 
-        Free energy = deltaG * [number of bonds in polymer]
+        Free energy = dG_bond * [number of bonds] + association_energy_penalty
+
         Number of bonds = (Sum[|A|.x] - Sum[A.x])/2
 
         Where:
@@ -56,11 +116,22 @@ class Polymer:
         - We divide by 2 because each bond involves exactly 2 binding sites
 
         Args:
-            deltaG: Free energy per bond (default: -1.0)
+            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+                   If None (default), no association penalty is applied
+            temperature: Temperature in Celsius (default: 37.0)
 
         Returns:
-            Free energy (deltaG times number of bonds)
+            Total free energy (bond energy + association penalty)
         """
+        # Check if deltaG was explicitly provided
+        use_association_penalty = deltaG is not None
+        
+        if deltaG is None:
+            deltaG = [-1.0, 0.0, 0.0]
+
+        # Unpack deltaG parameters
+        dG_bond, dG_assoc, dH_assoc = deltaG
+
         if self._free_energy is not None:
             return self._free_energy
 
@@ -81,8 +152,21 @@ class Polymer:
         # Divide by 2 because each bond involves exactly 2 binding sites
         num_bonds = (total_binding_sites - excess_unstar) / 2
 
-        # Free energy = deltaG * number of bonds
-        self._free_energy = deltaG * num_bonds
+        # Bond energy = dG_bond * number of bonds
+        bond_energy = dG_bond * num_bonds
+
+        # Compute association energy penalty only if deltaG was explicitly provided
+        if use_association_penalty:
+            # Compute total number of monomers in the polymer
+            total_monomers = int(np.sum(self.monomer_counts))
+            # Compute association energy penalty
+            assoc_penalty = compute_assoc_energy_penalty(total_monomers, temperature, dG_assoc, dH_assoc)
+        else:
+            # No association penalty when using default deltaG
+            assoc_penalty = 0.0
+
+        # Total free energy = bond energy + association penalty
+        self._free_energy = bond_energy + assoc_penalty
 
         return self._free_energy
 
@@ -266,7 +350,8 @@ class PolymerBasisComputer:
         coffee_runner: Optional[COFFEERunner] = None,
         verbose: bool = False,
         parameters: Optional[dict] = None,
-        deltaG: float = -1.0,
+        deltaG: Optional[List[float]] = None,
+        temperature: float = 37.0,
     ):
         """
         Save polymer basis to .tbnpolymat file format.
@@ -282,7 +367,8 @@ class PolymerBasisComputer:
             coffee_runner: Optional COFFEERunner instance for concentration computation
             verbose: Whether to enable verbose output
             parameters: Optional dictionary of parameters used for parametrized .tbn files
-            deltaG: Free energy per bond (default: -1.0)
+            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            temperature: Temperature in Celsius (default: 37.0)
         """
         # Determine what to compute
         has_monomer_concentrations = self.tbn.concentrations is not None
@@ -300,7 +386,7 @@ class PolymerBasisComputer:
                 coffee_runner = COFFEERunner()
             try:
                 polymer_concentrations = coffee_runner.compute_equilibrium_concentrations(
-                    polymers, self.tbn, deltaG=deltaG
+                    polymers, self.tbn, deltaG=deltaG, temperature=temperature
                 )
                 if verbose:
                     print("Equilibrium concentrations computed")
@@ -327,7 +413,7 @@ class PolymerBasisComputer:
         # Compute free energies if requested
         free_energies = None
         if include_free_energies:
-            free_energies = np.array([polymer.compute_free_energy(deltaG) for polymer in sorted_polymers])
+            free_energies = np.array([polymer.compute_free_energy(deltaG, temperature) for polymer in sorted_polymers])
 
         # Create PolymatData object
         polymat_data = PolymatData(

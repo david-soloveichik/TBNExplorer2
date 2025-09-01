@@ -17,7 +17,8 @@ class TestPolymer:
         polymer = Polymer(np.array([1]), [monomer], tbn)
 
         # For a singleton a a*, there's no bond formed (self-binding excluded)
-        # Free energy should be 0
+        # Free energy should be 0 (no bonds, no association penalty for single monomer)
+        # When deltaG is None (default), no association penalty is applied
         assert polymer.compute_free_energy() == 0
 
     def test_free_energy_dimer(self):
@@ -32,7 +33,7 @@ class TestPolymer:
 
         # The dimer forms one bond between a and a*
         # With corrected formula: (2 - 0)/2 = 1 bond
-        # Free energy = -1
+        # Free energy = -1 (one bond, no association penalty when deltaG is None)
         assert polymer.compute_free_energy() == -1
 
     def test_free_energy_complex_polymer(self):

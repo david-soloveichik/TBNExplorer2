@@ -89,10 +89,22 @@ Options:
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)
   --temp CELSIUS                    Temperature in Celsius (defaults to 37)
+  --deltaG dG_bond dG_assoc dH_assoc  Free energy parameters in kcal/mol (see below)
   --parametrized var1=val1 ...      Provide values for template variables in .tbn file
   --store-solver-inputs             Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging
   -v, --verbose                     Enable verbose output
 ```
+
+**Free Energy Calculation (`--deltaG`):**
+
+The `--deltaG` parameter controls polymer free energy calculation:
+
+- If not specified: Uses -1.0 kcal/mol per bond with no polymer size penalty
+- If specified with 3 values `dG_bond dG_assoc dH_assoc`:
+  - `dG_bond`: Free energy per bond (kcal/mol)
+  - `dG_assoc`, `dH_assoc`: Parameters for polymer size penalty based on number of monomers
+  - Example: `--deltaG -2.0 1.96 0.20` uses -2.0 per bond plus size-dependent penalty
+    Note: Nupack's parameters are: dG_assoc = 1.96, dH_assoc = 0.20
 
 **Outputs:**
 

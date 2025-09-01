@@ -35,7 +35,12 @@ class COFFEERunner:
         return os.path.isfile(self.coffee_path) and os.access(self.coffee_path, os.X_OK)
 
     def compute_equilibrium_concentrations(
-        self, polymers: List["Polymer"], tbn: TBN, output_dir: Optional[str] = None, deltaG: float = -1.0
+        self,
+        polymers: List["Polymer"],
+        tbn: TBN,
+        output_dir: Optional[str] = None,
+        deltaG: Optional[List[float]] = None,
+        temperature: float = 37.0,
     ) -> np.ndarray:
         """
         Compute equilibrium concentrations for polymers using COFFEE.
@@ -44,7 +49,8 @@ class COFFEERunner:
             polymers: List of Polymer objects
             tbn: TBN model with monomer concentrations
             output_dir: Optional directory for temporary files
-            deltaG: Free energy per bond (default: -1.0)
+            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            temperature: Temperature in Celsius (default: 37.0)
 
         Returns:
             Array of polymer concentrations in same order as input
@@ -70,7 +76,7 @@ class COFFEERunner:
         try:
             # Prepare CFE file (polymer matrix with free energies)
             cfe_path = os.path.join(work_dir, "polymers.cfe")
-            self._write_cfe_file(polymers, cfe_path, deltaG)
+            self._write_cfe_file(polymers, cfe_path, deltaG, temperature)
 
             # Prepare CON file (monomer concentrations)
             con_path = os.path.join(work_dir, "monomers.con")
@@ -103,7 +109,9 @@ class COFFEERunner:
             if use_temp_dir:
                 temp_dir_obj.cleanup()
 
-    def _write_cfe_file(self, polymers: List["Polymer"], filepath: str, deltaG: float = -1.0):
+    def _write_cfe_file(
+        self, polymers: List["Polymer"], filepath: str, deltaG: Optional[List[float]] = None, temperature: float = 37.0
+    ):
         """
         Write CFE file for COFFEE.
 
@@ -112,14 +120,15 @@ class COFFEERunner:
         Args:
             polymers: List of Polymer objects
             filepath: Path to write CFE file
-            deltaG: Free energy per bond (default: -1.0)
+            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            temperature: Temperature in Celsius (default: 37.0)
         """
         with open(filepath, "w") as f:
             for polymer in polymers:
                 # Write monomer counts
                 counts_str = " ".join(str(int(c)) for c in polymer.monomer_counts)
                 # Compute and write free energy
-                free_energy = polymer.compute_free_energy(deltaG)
+                free_energy = polymer.compute_free_energy(deltaG, temperature)
                 f.write(f"{counts_str} {free_energy}\n")
 
     def _write_con_file(self, tbn: TBN, filepath: str):
