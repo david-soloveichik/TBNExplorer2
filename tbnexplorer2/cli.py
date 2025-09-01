@@ -273,6 +273,8 @@ TBN File Format:
                 # Use NUPACK concentrations solver
                 from .nupack import NupackRunner
 
+                if args.verbose:
+                    print("Using NUPACK for equilibrium concentration computation")
                 concentration_runner = NupackRunner(args.nupack_path, temperature=args.temp)
                 if not concentration_runner.check_nupack_available():
                     print(f"Warning: NUPACK not found at '{args.nupack_path}', skipping concentration computation")
@@ -280,6 +282,8 @@ TBN File Format:
                     concentration_runner = None
             else:
                 # Use COFFEE solver (default)
+                if args.verbose:
+                    print("Using COFFEE for equilibrium concentration computation")
                 concentration_runner = COFFEERunner(args.coffee_path, temperature=args.temp)
                 if not concentration_runner.check_coffee_available():
                     print(f"Warning: COFFEE not found at '{args.coffee_path}', skipping concentration computation")
