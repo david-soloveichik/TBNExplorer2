@@ -19,14 +19,16 @@ if TYPE_CHECKING:
 class COFFEERunner:
     """Handles integration with the COFFEE equilibrium solver."""
 
-    def __init__(self, coffee_path: str = COFFEE_CLI_PATH):
+    def __init__(self, coffee_path: str = COFFEE_CLI_PATH, temperature: float = 37.0):
         """
         Initialize COFFEE runner.
 
         Args:
             coffee_path: Path to coffee-cli executable
+            temperature: Temperature in Celsius (defaults to 37)
         """
         self.coffee_path = coffee_path
+        self.temperature = temperature
 
     def check_coffee_available(self) -> bool:
         """Check if COFFEE executable is available."""
@@ -75,9 +77,13 @@ class COFFEERunner:
 
             # Run COFFEE
             output_path = os.path.join(work_dir, "equilibrium.txt")
-            result = subprocess.run(
-                [self.coffee_path, cfe_path, con_path, "-o", output_path], capture_output=True, text=True, check=False
-            )
+            cmd = [self.coffee_path, cfe_path, con_path, "-o", output_path]
+
+            # Only add temperature parameter if not default (for backward compatibility)
+            if self.temperature != 37.0:
+                cmd.extend(["--temp", str(self.temperature)])
+
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
             if result.returncode != 0:
                 raise RuntimeError(f"COFFEE failed: {result.stderr}")

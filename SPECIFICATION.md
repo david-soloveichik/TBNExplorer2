@@ -118,6 +118,9 @@ Use the `-o <filename>` flag for `coffee-cli` to write its output in `<filename>
 
 Important: For systems of interest, the polymer basis can be quite large (hundreds of thousands of polymers). COFFEE can handle CFE files of this size. We need to make sure that our code can handle it as well.
 
+### Optional temperature parameter
+`tbnexplorer2` should take an optional `--temp <celsius>` parameter, which gets passed to `coffee-cli  --temp <celsius>`.
+
 ## 4. Generate output TBN polymer matrix file
 This file should be in the same format at the CFE file for `coffee-cli` described above, with an additional column for the concentration of that polymer computed by `coffee-cli`. 
 The polymers should be **sorted** in order of decreasing concentration. 

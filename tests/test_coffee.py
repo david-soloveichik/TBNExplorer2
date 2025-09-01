@@ -17,6 +17,17 @@ class TestCOFFEERunner:
         custom_path = "/custom/path/to/coffee"
         runner = COFFEERunner(coffee_path=custom_path)
         assert runner.coffee_path == custom_path
+        assert runner.temperature == 37.0  # Default temperature
+
+    def test_init_with_temperature(self):
+        """Test COFFEERunner initialization with temperature."""
+        runner = COFFEERunner(temperature=25.0)
+        assert runner.temperature == 25.0
+
+    def test_init_default_temperature(self):
+        """Test COFFEERunner uses default temperature of 37."""
+        runner = COFFEERunner()
+        assert runner.temperature == 37.0
 
     def test_check_coffee_available_exists(self):
         """Test check_coffee_available when file exists and is executable."""
@@ -173,8 +184,10 @@ class TestCOFFEERunner:
         ) as mock_run, patch.object(runner, "_parse_coffee_output", return_value=expected_concentrations):
             result = runner.compute_equilibrium_concentrations(polymers, tbn)
 
-            # Verify subprocess was called
+            # Verify subprocess was called WITHOUT temperature parameter (default 37°C)
             assert mock_run.called
+            call_args = mock_run.call_args[0][0]  # Get the command list
+            assert "--temp" not in call_args  # Should not include --temp for default
 
             # Verify result
             np.testing.assert_array_almost_equal(result, expected_concentrations)
@@ -202,3 +215,74 @@ class TestCOFFEERunner:
         ):
             with pytest.raises(RuntimeError, match="COFFEE failed"):
                 runner.compute_equilibrium_concentrations(polymers, tbn)
+
+    def test_compute_equilibrium_with_temperature(self):
+        """Test that non-default temperature parameter is passed to coffee-cli."""
+        runner = COFFEERunner("/path/to/coffee", temperature=25.0)  # Non-default temperature
+
+        # Mock TBN
+        tbn = Mock(spec=TBN)
+        tbn.concentrations = np.array([1e-7])
+        tbn.concentration_units = "nM"
+
+        # Mock polymer
+        polymer = Mock(spec=Polymer)
+        polymer.monomer_counts = np.array([1])
+        polymer.compute_free_energy = Mock(return_value=-1.0)
+        polymers = [polymer]
+
+        # Mock successful subprocess result
+        mock_result = Mock()
+        mock_result.returncode = 0
+
+        expected_concentrations = np.array([1.5e-7])
+
+        with patch.object(runner, "check_coffee_available", return_value=True), patch(
+            "tbnexplorer2.coffee.subprocess.run", return_value=mock_result
+        ) as mock_run, patch.object(runner, "_parse_coffee_output", return_value=expected_concentrations):
+            result = runner.compute_equilibrium_concentrations(polymers, tbn)
+
+            # Verify subprocess was called with temperature parameter
+            assert mock_run.called
+            call_args = mock_run.call_args[0][0]  # Get the command list
+            assert "--temp" in call_args
+            temp_index = call_args.index("--temp")
+            assert call_args[temp_index + 1] == "25.0"  # Non-default temperature
+
+            # Verify result
+            np.testing.assert_array_almost_equal(result, expected_concentrations)
+
+    def test_compute_equilibrium_default_temp_no_param(self):
+        """Test that default temperature (37°C) does NOT pass --temp parameter for backward compatibility."""
+        runner = COFFEERunner("/path/to/coffee")  # Uses default 37°C
+        assert runner.temperature == 37.0
+
+        # Mock TBN
+        tbn = Mock(spec=TBN)
+        tbn.concentrations = np.array([1e-7])
+        tbn.concentration_units = "nM"
+
+        # Mock polymer
+        polymer = Mock(spec=Polymer)
+        polymer.monomer_counts = np.array([1])
+        polymer.compute_free_energy = Mock(return_value=-1.0)
+        polymers = [polymer]
+
+        # Mock successful subprocess result
+        mock_result = Mock()
+        mock_result.returncode = 0
+
+        expected_concentrations = np.array([1.5e-7])
+
+        with patch.object(runner, "check_coffee_available", return_value=True), patch(
+            "tbnexplorer2.coffee.subprocess.run", return_value=mock_result
+        ) as mock_run, patch.object(runner, "_parse_coffee_output", return_value=expected_concentrations):
+            result = runner.compute_equilibrium_concentrations(polymers, tbn)
+
+            # Verify subprocess was called WITHOUT --temp parameter (backward compatibility)
+            assert mock_run.called
+            call_args = mock_run.call_args[0][0]  # Get the command list
+            assert "--temp" not in call_args  # Should not include --temp for default 37°C
+
+            # Verify result
+            np.testing.assert_array_almost_equal(result, expected_concentrations)

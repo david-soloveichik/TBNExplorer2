@@ -88,6 +88,7 @@ Options:
   --user-friendly-polymer-basis     Generate human-readable polymer basis file
   --no-concentrations               Skip concentration calculations
   --no-free-energies                Skip free energy calculations (also skips concentrations)
+  --temp CELSIUS                    Temperature in Celsius (defaults to 37)
   --parametrized var1=val1 ...      Provide values for template variables in .tbn file
   --store-solver-inputs             Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging
   -v, --verbose                     Enable verbose output

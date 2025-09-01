@@ -38,6 +38,9 @@ Examples:
   # Use custom Normaliz path
   tbnexplorer2 example.tbn --normaliz-path /path/to/normaliz
   
+  # Specify temperature
+  tbnexplorer2 example.tbn --temp 37
+  
   # Verbose output
   tbnexplorer2 example.tbn --verbose
 
@@ -109,6 +112,13 @@ TBN File Format:
         "--store-solver-inputs",
         action="store_true",
         help="Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging",
+    )
+
+    parser.add_argument(
+        "--temp",
+        type=float,
+        default=37.0,
+        help="Temperature in Celsius (default: 37)",
     )
 
     args = parser.parse_args()
@@ -233,7 +243,7 @@ TBN File Format:
         # Check if COFFEE is available if needed
         coffee_runner = None
         if compute_concentrations and tbn.concentrations is not None:
-            coffee_runner = COFFEERunner(args.coffee_path)
+            coffee_runner = COFFEERunner(args.coffee_path, temperature=args.temp)
             if not coffee_runner.check_coffee_available():
                 print(f"Warning: COFFEE not found at '{args.coffee_path}', skipping concentration computation")
                 compute_concentrations = False
