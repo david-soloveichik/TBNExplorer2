@@ -113,7 +113,7 @@ Then the concentration of each polymer p thus obtained should be the same (or si
 If the results are quantitatively off, there might be deep conceptual issues that need to be addressed separately, but it would be good to know how far off they are.
 
 
-# Bounding specific off-target polymer concentrations
+# Bounding specific off-target polymer concentrations (undesired polymers)
 
 Often we are only interested in an upper bound on the concentrations of some specific set undesired off-target polymers p_1,...,p_k.
 In particular, for large systems, the generation of all irreducible canonical reactions (by Normaliz or 4ti2) takes too long or is completely infeasible.

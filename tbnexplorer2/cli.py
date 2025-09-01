@@ -121,6 +121,13 @@ TBN File Format:
         help="Temperature in Celsius (default: 37)",
     )
 
+    parser.add_argument(
+        "--deltaG",
+        type=float,
+        default=-1.0,
+        help="Free energy per bond (default: -1.0)",
+    )
+
     args = parser.parse_args()
 
     # Validate input file
@@ -258,6 +265,7 @@ TBN File Format:
             coffee_runner=coffee_runner,
             verbose=args.verbose,
             parameters=used_variables,
+            deltaG=args.deltaG,
         )
 
         # Print summary

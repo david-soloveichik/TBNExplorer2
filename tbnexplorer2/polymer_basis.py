@@ -42,11 +42,11 @@ class Polymer:
                 result.append((int(count), monomer))
         return result
 
-    def compute_free_energy(self) -> float:
+    def compute_free_energy(self, deltaG: float = -1.0) -> float:
         """
         Compute the free energy of this polymer.
 
-        Free energy = -[number of bonds in polymer]
+        Free energy = deltaG * [number of bonds in polymer]
         Number of bonds = (Sum[|A|.x] - Sum[A.x])/2
 
         Where:
@@ -55,8 +55,11 @@ class Polymer:
         - Sum[v] sums all elements of vector v
         - We divide by 2 because each bond involves exactly 2 binding sites
 
+        Args:
+            deltaG: Free energy per bond (default: -1.0)
+
         Returns:
-            Free energy (negative number of bonds)
+            Free energy (deltaG times number of bonds)
         """
         if self._free_energy is not None:
             return self._free_energy
@@ -78,8 +81,8 @@ class Polymer:
         # Divide by 2 because each bond involves exactly 2 binding sites
         num_bonds = (total_binding_sites - excess_unstar) / 2
 
-        # Free energy = -number of bonds
-        self._free_energy = -num_bonds
+        # Free energy = deltaG * number of bonds
+        self._free_energy = deltaG * num_bonds
 
         return self._free_energy
 
@@ -263,6 +266,7 @@ class PolymerBasisComputer:
         coffee_runner: Optional[COFFEERunner] = None,
         verbose: bool = False,
         parameters: Optional[dict] = None,
+        deltaG: float = -1.0,
     ):
         """
         Save polymer basis to .tbnpolymat file format.
@@ -278,6 +282,7 @@ class PolymerBasisComputer:
             coffee_runner: Optional COFFEERunner instance for concentration computation
             verbose: Whether to enable verbose output
             parameters: Optional dictionary of parameters used for parametrized .tbn files
+            deltaG: Free energy per bond (default: -1.0)
         """
         # Determine what to compute
         has_monomer_concentrations = self.tbn.concentrations is not None
@@ -294,7 +299,9 @@ class PolymerBasisComputer:
             if coffee_runner is None:
                 coffee_runner = COFFEERunner()
             try:
-                polymer_concentrations = coffee_runner.compute_equilibrium_concentrations(polymers, self.tbn)
+                polymer_concentrations = coffee_runner.compute_equilibrium_concentrations(
+                    polymers, self.tbn, deltaG=deltaG
+                )
                 if verbose:
                     print("Equilibrium concentrations computed")
                 # Attach concentrations to polymers for sorting
@@ -320,7 +327,7 @@ class PolymerBasisComputer:
         # Compute free energies if requested
         free_energies = None
         if include_free_energies:
-            free_energies = np.array([polymer.compute_free_energy() for polymer in sorted_polymers])
+            free_energies = np.array([polymer.compute_free_energy(deltaG) for polymer in sorted_polymers])
 
         # Create PolymatData object
         polymat_data = PolymatData(

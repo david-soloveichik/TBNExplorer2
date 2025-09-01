@@ -199,11 +199,11 @@ class TestPolymerBasisComputer:
             Polymer(np.array([0, 2, 2]), monomers, tbn),  # 2*Monomer 1 + 2*Monomer 2
         ]
 
-        # Compute free energies
+        # Compute free energies with default deltaG
         for polymer in polymers:
             polymer.compute_free_energy()
 
-        # Calculate expected free energies
+        # Calculate expected free energies with deltaG = -1
         # Matrix A = [[1, -1, 0], [-1, 0, 1]]
         # |A| = [[1, 1, 0], [1, 0, 1]]
 
@@ -212,6 +212,7 @@ class TestPolymerBasisComputer:
         # |A|.x = [1*1 + 1*1 + 0*0, 1*1 + 0*1 + 1*0] = [2, 1]
         # Sum(|A|.x) = 3, Sum(A.x) = -1
         # bonds = (3 - (-1)) / 2 = 2
+        # free_energy = -1 * 2 = -2
         assert polymers[0]._free_energy == -2
 
         # For polymer [1, 0, 1]:
@@ -219,6 +220,7 @@ class TestPolymerBasisComputer:
         # |A|.x = [1*1 + 1*0 + 0*1, 1*1 + 0*0 + 1*1] = [1, 2]
         # Sum(|A|.x) = 3, Sum(A.x) = 1
         # bonds = (3 - 1) / 2 = 1
+        # free_energy = -1 * 1 = -1
         assert polymers[1]._free_energy == -1
 
         # For polymer [0, 2, 2]:
@@ -226,7 +228,48 @@ class TestPolymerBasisComputer:
         # |A|.x = [1*0 + 1*2 + 0*2, 1*0 + 0*2 + 1*2] = [2, 2]
         # Sum(|A|.x) = 4, Sum(A.x) = 0
         # bonds = (4 - 0) / 2 = 2
+        # free_energy = -1 * 2 = -2
         assert polymers[2]._free_energy == -2
+
+    def test_compute_free_energies_with_custom_deltaG(self):
+        """Test compute_free_energies method with custom deltaG parameter."""
+        tbn = Mock(spec=TBN)
+        # Matrix A: 2 binding sites, 3 monomers
+        # Monomer 0: {a, b*}  -> [1, -1]
+        # Monomer 1: {a*}     -> [-1, 0]
+        # Monomer 2: {b}      -> [0, 1]
+        tbn.matrix_A = np.array(
+            [
+                [1, -1, 0],  # binding site a
+                [-1, 0, 1],  # binding site b
+            ]
+        )
+
+        monomers = [Mock(spec=Monomer) for _ in range(3)]
+        polymers = [
+            Polymer(np.array([1, 1, 0]), monomers, tbn),  # Monomer 0 + Monomer 1
+            Polymer(np.array([1, 0, 1]), monomers, tbn),  # Monomer 0 + Monomer 2
+            Polymer(np.array([0, 2, 2]), monomers, tbn),  # 2*Monomer 1 + 2*Monomer 2
+        ]
+
+        # Reset free energy cache
+        for polymer in polymers:
+            polymer._free_energy = None
+
+        # Compute free energies with custom deltaG = -2.5
+        deltaG = -2.5
+        for polymer in polymers:
+            polymer.compute_free_energy(deltaG)
+
+        # Calculate expected free energies with deltaG = -2.5
+        # For polymer [1, 1, 0]: 2 bonds * deltaG = 2 * -2.5 = -5
+        assert polymers[0]._free_energy == -5.0
+
+        # For polymer [1, 0, 1]: 1 bond * deltaG = 1 * -2.5 = -2.5
+        assert polymers[1]._free_energy == -2.5
+
+        # For polymer [0, 2, 2]: 2 bonds * deltaG = 2 * -2.5 = -5
+        assert polymers[2]._free_energy == -5.0
 
     def test_save_polymer_basis(self):
         """Test save_polymer_basis method with correct signature."""

@@ -108,6 +108,11 @@ We exclude self-binding within a monomer from that calculation (e.g., in a monom
 We can compute the number of bonds in polymer x as: (Sum[|A|.x] - Sum[A.x])/2, where |A| is the same as A but with absolute value applied to all entries, and Sum[v] sums all the elements of v. 
 Thus, intuitively, Sum[|A|.x] is the total number of binding sites in x (excluding self-binding within a monomer), and Sum[A.x] is the total excess of unstar binding sites. Subtracting the two gives twice the number of bonds formed (since each bond involves exactly 2 binding sites), so we divide by 2. 
 
+### Optional deltaG parameter
+In the simple model described above (default behavior), the "free energy" of a bond is -1. If the optional `--deltaG <dG>` parameter is given to `tbnexplorer2`, then instead of -1 we should use `dG`. (Units of dG are kcal/mol as interpreted by COFFEE.)
+
+**Sanity check:** Changing bond `deltaG` alone should not change the equilibrium concentrations.
+
 ## 3. Compute equilibrium polymer concentrations
 The big picture is that we want to compute the equilibrium concentrations of all the polymers in the polymer basis. We use the command line tool COFFEE for this.
 
