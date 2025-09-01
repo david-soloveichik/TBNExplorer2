@@ -102,8 +102,8 @@ The `--deltaG` parameter controls polymer free energy calculation:
 - If not specified: Uses -1.0 kcal/mol per bond with no polymer size penalty
 - If specified with 3 values `dG_bond dG_assoc dH_assoc`:
   - `dG_bond`: Free energy per bond (kcal/mol)
-  - `dG_assoc`, `dH_assoc`: Parameters for polymer size penalty based on number of monomers
-  - Example: `--deltaG -2.0 1.96 0.20` uses -2.0 per bond plus size-dependent penalty
+  - `dG_assoc`, `dH_assoc`: Parameters for polymer size penalty based on number of monomers (kcal/mol)
+  - Example: `--deltaG -20.0 1.96 0.20` uses -20.0 per bond plus size-dependent penalty
     Note: Nupack's parameters are: dG_assoc = 1.96, dH_assoc = 0.20
 
 **Outputs:**
