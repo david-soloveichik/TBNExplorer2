@@ -31,10 +31,8 @@ class TestPolymer:
         # Create dimer polymer (one of each monomer)
         polymer = Polymer(np.array([1, 1]), [monomer1, monomer2], tbn)
 
-        # The dimer forms one bond between a and a*
-        # With corrected formula: (2 - 0)/2 = 1 bond
-        # Free energy = -1 (one bond, no association penalty when deltaG is None)
-        assert polymer.compute_free_energy() == -1
+        # With bond term ignored and no association penalty by default
+        assert polymer.compute_free_energy() == 0
 
     def test_free_energy_complex_polymer(self):
         """Test free energy computation for a more complex polymer."""
@@ -64,10 +62,8 @@ class TestPolymer:
         # x = [2, 2]
         # |A| * x = [1*2 + 1*2, 1*2 + 1*2] = [4, 4], sum = 8
         # A * x = [1*2 + (-1)*2, 1*2 + (-1)*2] = [0, 0], sum = 0
-        # Number of bonds = (8 - 0)/2 = 4
-        # Free energy = -4
-        # (This represents 4 actual bonds: 2 a-a* and 2 b-b*)
-        assert polymer.compute_free_energy() == -4
+        # Bonds are ignored; default energy is 0 without association penalty
+        assert polymer.compute_free_energy() == 0
 
     def test_free_energy_partial_binding(self):
         """Test free energy for polymer with partial binding."""
@@ -95,9 +91,8 @@ class TestPolymer:
         # x = [1, 1]
         # |A| * x = [2, 1, 1], sum = 4 (total binding sites)
         # A * x = [0, 1, 1], sum = 2 (excess unstar)
-        # Number of bonds = (4 - 2)/2 = 1
-        # Free energy = -1 (one a-a* bond formed)
-        assert polymer.compute_free_energy() == -1
+        # Bonds are ignored; default energy is 0 without association penalty
+        assert polymer.compute_free_energy() == 0
 
     def test_free_energy_no_tbn_error(self):
         """Test that computing free energy without TBN raises error."""

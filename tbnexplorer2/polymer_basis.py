@@ -104,52 +104,31 @@ class Polymer:
         """
         Compute the free energy of this polymer.
 
-        Free energy = dG_bond * [number of bonds] + association_energy_penalty
+        Free energy = association_energy_penalty
 
-        Number of bonds = (Sum[|A|.x] - Sum[A.x])/2
-
-        Where:
-        - |A| is the matrix A with absolute values
-        - x is the polymer's monomer count vector
-        - Sum[v] sums all elements of vector v
-        - We divide by 2 because each bond involves exactly 2 binding sites
+        Note: since the number of bonds is always maximized, 
+        we are ok setting the bond free energy to zero.
 
         Args:
-            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
-                   If None (default), no association penalty is applied
+            deltaG: List of [dG_assoc, dH_assoc]. If None (default),
+                   no association penalty is applied. 
             temperature: Temperature in Celsius (default: 37.0)
 
         Returns:
             Total free energy (bond energy + association penalty)
         """
-        # Check if deltaG was explicitly provided
+        # Check if deltaG was explicitly provided for association penalty
         use_association_penalty = deltaG is not None
-
-        if deltaG is None:
-            deltaG = [-1.0, 0.0, 0.0]
-
-        # Unpack deltaG parameters
-        dG_bond, dG_assoc, dH_assoc = deltaG
+        dG_assoc = dH_assoc = 0.0
+        if deltaG is not None:
+            if len(deltaG) != 2:
+                raise ValueError("deltaG must be [dG_assoc, dH_assoc] when provided")
+            dG_assoc, dH_assoc = deltaG
 
         if self.tbn is None:
             raise ValueError("Cannot compute free energy without TBN model reference")
 
-        # Get matrix A
-        A = self.tbn.matrix_A
-
-        # Compute |A| * x (total binding sites, excluding self-binding within monomers)
-        abs_A = np.abs(A)
-        total_binding_sites = np.sum(abs_A @ self.monomer_counts)
-
-        # Compute A * x (excess of unstar binding sites)
-        excess_unstar = np.sum(A @ self.monomer_counts)
-
-        # Number of bonds = (total binding sites - excess unstar) / 2
-        # Divide by 2 because each bond involves exactly 2 binding sites
-        num_bonds = (total_binding_sites - excess_unstar) / 2
-
-        # Bond energy = dG_bond * number of bonds
-        bond_energy = dG_bond * num_bonds
+        # Bond term is ignored in this model (effectively 0)
 
         # Compute association energy penalty only if deltaG was explicitly provided
         if use_association_penalty:
@@ -161,8 +140,8 @@ class Polymer:
             # No association penalty when using default deltaG
             assoc_penalty = 0.0
 
-        # Total free energy = bond energy + association penalty
-        return bond_energy + assoc_penalty
+        # Total free energy = association penalty only
+        return assoc_penalty
 
     def __eq__(self, other):
         if not isinstance(other, Polymer):
@@ -361,7 +340,7 @@ class PolymerBasisComputer:
             concentration_runner: Optional COFFEERunner or NupackRunner instance for concentration computation
             verbose: Whether to enable verbose output
             parameters: Optional dictionary of parameters used for parametrized .tbn files
-            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            deltaG: Optional [dG_assoc, dH_assoc] association parameters
             temperature: Temperature in Celsius (default: 37.0)
         """
         # Determine what to compute

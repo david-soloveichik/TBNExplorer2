@@ -49,7 +49,7 @@ class NupackRunner:
             polymers: List of Polymer objects
             tbn: TBN model with monomer concentrations
             output_dir: Optional directory for temporary files
-            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            deltaG: Optional [dG_assoc, dH_assoc] association parameters
             temperature: Temperature in Celsius (default: 37.0)
 
         Returns:
@@ -125,7 +125,7 @@ class NupackRunner:
         Args:
             polymers: List of Polymer objects
             filepath: Path to write OCX file
-            deltaG: List of [dG_bond, dG_assoc, dH_assoc] (default: [-1.0, 0.0, 0.0])
+            deltaG: Optional [dG_assoc, dH_assoc] association parameters
             temperature: Temperature in Celsius (default: 37.0)
         """
         with open(filepath, "w") as f:

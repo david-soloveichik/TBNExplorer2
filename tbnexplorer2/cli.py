@@ -126,13 +126,15 @@ TBN File Format:
     )
 
     parser.add_argument(
-        "--deltaG",
-        nargs=3,
+        "--deltaG-assoc",
+        nargs=2,
         type=float,
-        metavar=("dG_bond", "dG_assoc", "dH_assoc"),
+        metavar=("dG_assoc", "dH_assoc"),
         default=None,
-        help="Free energy parameters in kcal/mol: dG_bond (per bond), dG_assoc and dH_assoc (for polymer size penalty). "
-        "Default: -1.0 per bond, no size penalty. Example: --deltaG -2.0 5.0 3.0",
+        help=(
+            "Association free energy parameters in kcal/mol: dG_assoc and dH_assoc. "
+            "Example: --deltaG-assoc 1.96 0.20"
+        ),
     )
 
     parser.add_argument(
@@ -299,7 +301,7 @@ TBN File Format:
             concentration_runner=concentration_runner,
             verbose=args.verbose,
             parameters=used_variables,
-            deltaG=args.deltaG,
+            deltaG=args.deltaG_assoc,
             temperature=args.temp,
         )
 

@@ -94,22 +94,21 @@ Options:
   --use-nupack-concentrations       Use NUPACK instead of COFFEE for equilibrium calculations
   --nupack-path PATH                Path to NUPACK concentrations executable
   --temp CELSIUS                    Temperature in Celsius (defaults to 37)
-  --deltaG dG_bond dG_assoc dH_assoc  Free energy parameters in kcal/mol (see below)
+  --deltaG-assoc dG_assoc dH_assoc  Association free energy parameters in kcal/mol (see below)
   --parametrized var1=val1 ...      Provide values for template variables in .tbn file
   --store-solver-inputs             Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging
   -v, --verbose                     Enable verbose output
 ```
 
-**Free Energy Calculation (`--deltaG`):**
+**Free Energy Calculation (`--deltaG-assoc`):**
 
-The `--deltaG` parameter controls polymer free energy calculation:
+The `--deltaG-assoc` parameter sets any additional association (polymer-size) penalty.
 
-- If not specified: Uses -1.0 kcal/mol per bond with no polymer size penalty
-- If specified with 3 values `dG_bond dG_assoc dH_assoc`:
-  - `dG_bond`: Free energy per bond (kcal/mol)
+- If not specified: No association penalty is applied (free energies are 0).
+- If specified with 2 values `dG_assoc dH_assoc`:
   - `dG_assoc`, `dH_assoc`: Parameters for polymer size penalty based on number of monomers (kcal/mol)
-  - Example: `--deltaG -20.0 1.96 0.20` uses -20.0 per bond plus size-dependent penalty
-    Note: Nupack's parameters are: dG_assoc = 1.96, dH_assoc = 0.20
+  - Example: `--deltaG-assoc 1.96 0.20` uses a size-dependent penalty like NUPACK's default
+    (NUPACK parameters: dG_assoc = 1.96, dH_assoc = 0.20)
 
 **Outputs:**
 

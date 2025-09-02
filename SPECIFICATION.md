@@ -101,21 +101,14 @@ Let's have an optional argument `--use-4ti2` to use the Hilbert basis solver of 
 ## 2. Compute polymer free energies
 Given the polymers in the polymer basis, we want to compute their "free energies". 
 In general, we want to implement the following: Given a matrix of polymers, with a polymer per row (ie vector of the monomer counts of that polymer), we want to compute the "free energies" of each polymer. 
+Since the binding is always maximized, we can set the free energy of a polymer x as dG(x) = 0.
 
-Intuitively, the free energy of a polymer x is dG(x) = -[number of bonds in that polymer]. 
-We exclude self-binding within a monomer from that calculation (e.g., in a monomer like {a, b, b*}, we don't count the b-b* bond). This is because this bond is always there.
+However, sometimes we want to add an extra dG_assoc penalty term for each additional monomer in a polymer based on empirical parameters (as is done in Nupack). If the optional `--deltaG-assoc <dG_assoc> <dH_assoc>` parameter is given to `tbnexplorer2`, we increase (i.e., make less negative) the free energy of each polymer by `assoc_energy_penalty` as computed in `/PLANNING/assoc_energy.py`.
 
-We can compute the number of bonds in polymer x as: (Sum[|A|.x] - Sum[A.x])/2, where |A| is the same as A but with absolute value applied to all entries, and Sum[v] sums all the elements of v. 
-Thus, intuitively, Sum[|A|.x] is the total number of binding sites in x (excluding self-binding within a monomer), and Sum[A.x] is the total excess of unstar binding sites. Subtracting the two gives twice the number of bonds formed (since each bond involves exactly 2 binding sites), so we divide by 2. 
-
-### Optional deltaG parameter
-In the simple model described above (default behavior), the "free energy" of a bond is -1 and there is no additional empirical penalty for forming large polymers. If the optional `--deltaG <dG_bond> <dG_assoc> <dH_assoc>` parameter is given to `tbnexplorer2`, then: 
-(1) instead of `-1` per bond we should use `dG_bond` per bond,
-(2) increase (i.e., make less negative) the free energy of each polymer by `assoc_energy_penalty` as computed in `/PLANNING/assoc_energy.py`. (The code in that file is for reference only, and the functionality should be copied to the appropriate place.) 
 Variable mapping:
 `total_monomers` = number of monomers in the polymer,
 `temp_C` = temperature in Celcius (default 37C, can be changed by `--temp` described below)
-`G_BIMOLECULAR` = `dG_assoc`, 
+`G_BIMOLECULAR` = `dG_assoc`,
 `H_BIMOLECULAR` = `dH_assoc`.
 
 ## 3. Compute equilibrium polymer concentrations

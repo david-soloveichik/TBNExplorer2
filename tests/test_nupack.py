@@ -94,7 +94,7 @@ class TestNupackRunner:
         for i, polymer in enumerate(sample_polymers):
             polymer.compute_free_energy = Mock(return_value=-1.5 * (i + 1))
 
-        runner._write_ocx_file(sample_polymers, str(ocx_path), deltaG=[-1.0, 0.0, 0.0], temperature=37.0)
+        runner._write_ocx_file(sample_polymers, str(ocx_path), deltaG=[0.0, 0.0], temperature=37.0)
 
         # Read and verify file contents
         with open(ocx_path) as f:
@@ -177,7 +177,7 @@ class TestNupackRunner:
             runner._parse_nupack_output = Mock(return_value=np.array([1e-7, 2e-8, 3e-9]))
 
             concentrations = runner.compute_equilibrium_concentrations(
-                sample_polymers, sample_tbn, output_dir=temp_dir, deltaG=[-1.0, 0.0, 0.0], temperature=25.0
+                sample_polymers, sample_tbn, output_dir=temp_dir, deltaG=[0.0, 0.0], temperature=25.0
             )
 
             # Verify subprocess was called with correct arguments

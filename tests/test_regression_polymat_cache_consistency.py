@@ -29,7 +29,7 @@ class FakeNupackRunner:
 def test_concentrations_identical_with_and_without_cached_polymat(tmp_path):
     """Regression: concentrations should not depend on presence of .tbnpolymat.
 
-    This mimics running with --use-nupack-concentrations and --deltaG by supplying
+    This mimics running with --use-nupack-concentrations and --deltaG-assoc by supplying
     a fake NUPACK-like runner, and verifies results are identical across runs
     whether the basis is freshly computed or loaded from an existing .tbnpolymat.
     """
@@ -51,7 +51,7 @@ def test_concentrations_identical_with_and_without_cached_polymat(tmp_path):
 
     # Runner that uses current deltaG to compute energies deterministically
     runner = FakeNupackRunner(temperature=37.0)
-    deltaG = [-2.0, 5.0, 3.0]
+    deltaG = [5.0, 3.0]
 
     # First save (no cache yet)
     computer.save_tbnpolymat(

@@ -19,14 +19,13 @@ class TestPolymerWithAssociation:
         polymer = Polymer(np.array([1, 1]), [monomer1, monomer2], tbn)
 
         # Test with non-zero association parameters
-        deltaG = [-1.0, 5.0, 3.0]  # dG_bond=-1, dG_assoc=5, dH_assoc=3
+        deltaG = [5.0, 3.0]  # dG_assoc=5, dH_assoc=3
         temperature = 37.0
 
-        # The dimer forms one bond: free energy from bond = -1.0
         # Association penalty for 2 monomers = bimolecular * (2-1) = bimolecular
         assoc_penalty = compute_assoc_energy_penalty(2, temperature, 5.0, 3.0)
 
-        expected_free_energy = -1.0 + assoc_penalty
+        expected_free_energy = assoc_penalty
         actual_free_energy = polymer.compute_free_energy(deltaG, temperature)
 
         assert abs(actual_free_energy - expected_free_energy) < 1e-6
@@ -51,19 +50,13 @@ class TestPolymerWithAssociation:
         # Create polymer with 3 M1 and 3 M2 (total 6 monomers)
         polymer = Polymer(np.array([3, 3]), [monomer1, monomer2], tbn)
 
-        deltaG = [-2.0, 4.0, 2.0]  # dG_bond=-2, dG_assoc=4, dH_assoc=2
+        deltaG = [4.0, 2.0]  # dG_assoc=4, dH_assoc=2
         temperature = 25.0
-
-        # Calculate bonds formed:
-        # |A| * x = [6, 6], sum = 12
-        # A * x = [0, 0], sum = 0
-        # Number of bonds = (12 - 0)/2 = 6
-        bond_energy = -2.0 * 6
 
         # Association penalty for 6 monomers
         assoc_penalty = compute_assoc_energy_penalty(6, temperature, 4.0, 2.0)
 
-        expected_free_energy = bond_energy + assoc_penalty
+        expected_free_energy = assoc_penalty
         actual_free_energy = polymer.compute_free_energy(deltaG, temperature)
 
         assert abs(actual_free_energy - expected_free_energy) < 1e-6
@@ -76,7 +69,7 @@ class TestPolymerWithAssociation:
         tbn = TBN([monomer1, monomer2], {"a": 0})
         polymer = Polymer(np.array([1, 1]), [monomer1, monomer2], tbn)
 
-        deltaG = [-1.0, 5.0, 3.0]
+        deltaG = [5.0, 3.0]
 
         # Compute at different temperatures
         energy_25 = polymer.compute_free_energy(deltaG, 25.0)
@@ -99,31 +92,30 @@ class TestPolymerWithAssociation:
         tbn = TBN([monomer], {"a": 0})
         polymer = Polymer(np.array([1]), [monomer], tbn)
 
-        deltaG = [-1.0, 5.0, 3.0]  # Non-zero association parameters
+        deltaG = [5.0, 3.0]  # Non-zero association parameters
         temperature = 37.0
 
         # Singleton has no bonds and no association penalty
         # (total_monomers = 1, so penalty = bimolecular * (1-1) = 0)
         assert polymer.compute_free_energy(deltaG, temperature) == 0.0
 
-    def test_default_deltag_no_association_penalty(self):
-        """Test that default deltaG (None) results in no association penalty."""
+    def test_default_no_association_penalty(self):
+        """Test that default (no params) results in no association penalty."""
         # Create simple dimer
         monomer1 = Monomer(name="M1", binding_sites=[BindingSite("a", False)], concentration=100, original_line="M1: a")
         monomer2 = Monomer(name="M2", binding_sites=[BindingSite("a", True)], concentration=100, original_line="M2: a*")
         tbn = TBN([monomer1, monomer2], {"a": 0})
         polymer = Polymer(np.array([1, 1]), [monomer1, monomer2], tbn)
 
-        # With default deltaG (None), should only have bond energy, no association penalty
-        # One bond formed, so energy = -1.0
-        assert polymer.compute_free_energy() == -1.0
+        # With default (None), bond term ignored and no association penalty
+        assert polymer.compute_free_energy() == 0.0
 
-        # Test with explicit deltaG = [-1.0, 0.0, 0.0]; includes association penalty
-        energy_with_assoc = polymer.compute_free_energy([-1.0, 0.0, 0.0])
+        # Test with explicit association params = [0.0, 0.0]; includes water density term
+        energy_with_assoc = polymer.compute_free_energy([0.0, 0.0])
 
-        # This should be different from -1.0 due to water density contribution
-        assert energy_with_assoc != -1.0
-        assert energy_with_assoc < -1.0  # More negative due to favorable water density term
+        # This should be different from 0.0 due to water density contribution and negative
+        assert energy_with_assoc != 0.0
+        assert energy_with_assoc < 0.0
 
 
 if __name__ == "__main__":
