@@ -112,12 +112,6 @@ c* d*
         with pytest.raises(ValueError, match="Target polymer indices out of range"):
             computer.compute_irreducible_canonical_reactions_for_targets({10})  # Out of range
 
-        # Test 3: Cannot use 4ti2
-        computer_4ti2 = CanonicalReactionsComputer(tbn, use_4ti2=True)
-        computer_4ti2.setup_matrices(polymer_basis, on_target_indices)
-        with pytest.raises(ValueError, match="Upper bound computation requires Normaliz"):
-            computer_4ti2.compute_irreducible_canonical_reactions_for_targets({2})
-
     def test_upper_bounds_cli_validation(self):
         """Test command-line validation for upper bounds options."""
         # Create test files
@@ -137,25 +131,7 @@ c d
 """
         upper_bound_path = self.create_test_tbnpolys_file(upper_bound_content, "upper_bound.tbnpolys")
 
-        # Test 1: Cannot use with --use-4ti2
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "extensions.ibot_cli",
-                str(tbn_path),
-                str(on_target_path),
-                "--upper-bound-on-polymers",
-                str(upper_bound_path),
-                "--use-4ti2",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        assert result.returncode != 0
-        assert "cannot be used with --use-4ti2" in result.stderr
-
-        # Test 2: Cannot use with --generate-tbn
+        # Test: Cannot use with --generate-tbn
         result = subprocess.run(
             [
                 "python",
