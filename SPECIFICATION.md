@@ -134,7 +134,7 @@ Important: For systems of interest, the polymer basis can be quite large (hundre
 ### Option to use Nupack 3 concentrations solver instead of COFFEE
 Let's have an optional argument `--use-nupack-concentrations` to use Nupack's `concentrations` CLI tool instead of COFFEE to compute polymer concentrations. Path to `concentrations` is in .env as `NUPACK_CONCENTRATIONS_PATH`.
 
-Command line: `concentrations -T {temperature_in_C} {base}`. The tool takes input files in a similar format as COFFEE called {base}.ocx (containing the matrix of polymers) and {base}.con (containing the concentrations of all the monomers in units of Molar). The .ocx file is a tab-delimited file with the first column being the polymer id (line number), the second column being always 1, and then the monomer composition of the polymer as for COFFEE, concluding in the free energy of that polymer.
+Command line: `concentrations -sort 0 -T {temperature_in_C} {base}`. The `-sort 0` flag preserves input polymer order between .ocx and .eq. The tool takes input files in a similar format as COFFEE called {base}.ocx (containing the matrix of polymers) and {base}.con (containing the concentrations of all the monomers in units of Molar). The .ocx file is a tab-delimited file with the first column being the polymer id (line number), the second column being always 1, and then the monomer composition of the polymer as for COFFEE, concluding in the free energy of that polymer.
 
 After `concentration` is executed, {base}.eq is generated, which *adds* another column to the .ocx file (as last column) which contains the equilibrium concentrations of all the polymers in units of Molar.
 

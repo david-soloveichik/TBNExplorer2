@@ -120,7 +120,7 @@ class TestPolymerWithAssociation:
 
         # Test with explicit deltaG = [-1.0, 0.0, 0.0]; includes association penalty
         energy_with_assoc = polymer.compute_free_energy([-1.0, 0.0, 0.0])
-        
+
         # This should be different from -1.0 due to water density contribution
         assert energy_with_assoc != -1.0
         assert energy_with_assoc < -1.0  # More negative due to favorable water density term

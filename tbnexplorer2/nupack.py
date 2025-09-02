@@ -86,8 +86,9 @@ class NupackRunner:
             self._write_con_file(tbn, con_path)
 
             # Run NUPACK concentrations
-            # Command: concentrations -T {temperature_in_C} {base}
-            cmd = [self.nupack_path, "-T", str(temperature), base_path]
+            # Command: concentrations -sort 0 -T {temperature_in_C} {base}
+            # -sort 0 preserves input order (no sorting)
+            cmd = [self.nupack_path, "-sort", "0", "-T", str(temperature), base_path]
 
             result = subprocess.run(cmd, capture_output=True, text=True, check=False, cwd=work_dir)
 
