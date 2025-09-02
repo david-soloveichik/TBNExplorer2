@@ -132,8 +132,7 @@ TBN File Format:
         metavar=("dG_assoc", "dH_assoc"),
         default=None,
         help=(
-            "Association free energy parameters in kcal/mol: dG_assoc and dH_assoc. "
-            "Example: --deltaG-assoc 1.96 0.20"
+            "Association free energy parameters in kcal/mol: dG_assoc and dH_assoc. Example: --deltaG-assoc 1.96 0.20"
         ),
     )
 

@@ -226,6 +226,7 @@ class TestPolymerBasisComputer:
 
         # Compute free energies with explicit association parameters
         from tbnexplorer2.polymer_basis import compute_assoc_energy_penalty
+
         deltaG = [0.0, 0.0]
         energies2 = [polymer.compute_free_energy(deltaG) for polymer in polymers]
 

@@ -106,12 +106,12 @@ class Polymer:
 
         Free energy = association_energy_penalty
 
-        Note: since the number of bonds is always maximized, 
+        Note: since the number of bonds is always maximized,
         we are ok setting the bond free energy to zero.
 
         Args:
             deltaG: List of [dG_assoc, dH_assoc]. If None (default),
-                   no association penalty is applied. 
+                   no association penalty is applied.
             temperature: Temperature in Celsius (default: 37.0)
 
         Returns:

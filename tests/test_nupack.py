@@ -6,8 +6,8 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from tbnexplorer2.model import TBN, Monomer, BindingSite
 from tbnexplorer2.config import NUPACK_CONCENTRATIONS_PATH
+from tbnexplorer2.model import TBN, BindingSite, Monomer
 from tbnexplorer2.nupack import NupackRunner
 from tbnexplorer2.polymer_basis import Polymer
 
@@ -184,9 +184,11 @@ class TestNupackRunner:
             assert mock_run.called
             call_args = mock_run.call_args[0][0]
             assert call_args[0] == "/path/to/nupack"
-            assert call_args[1] == "-T"
-            assert call_args[2] == "25.0"
-            assert "nupack_input" in call_args[3]
+            assert call_args[1] == "-sort"
+            assert call_args[2] == "0"
+            assert call_args[3] == "-T"
+            assert call_args[4] == "25.0"
+            assert "nupack_input" in call_args[5]
 
             # Verify concentrations returned
             assert len(concentrations) == 3
