@@ -15,7 +15,7 @@ Enthalpy is assumed to be infinitely preferred over entropy and the system must 
 Given a set of monomers (described by their binding sites) and their initial concentrations, TBN Explorer computes:
 
 1. The **polymer basis** - the set of "unsplittable" polymers [3]
-2. The **free energies** of each polymer equal to the number of bonds
+2. The **free energies** of each polymer equal to any additional association penalty (0 by default)
 3. The **equilibrium concentrations** of all polymers in the system [4]
 
 ### Extensions
