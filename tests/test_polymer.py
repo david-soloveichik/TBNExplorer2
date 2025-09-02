@@ -108,8 +108,8 @@ class TestPolymer:
         with pytest.raises(ValueError, match="Cannot compute free energy without TBN"):
             polymer.compute_free_energy()
 
-    def test_free_energy_cached(self):
-        """Test that free energy is cached after first computation."""
+    def test_free_energy_repeatable(self):
+        """Test that repeated free energy computations return the same value for same params."""
         # Create a simple TBN
         monomer1 = Monomer(name="M1", binding_sites=[BindingSite("a", False)], concentration=100, original_line="M1: a")
         monomer2 = Monomer(name="M2", binding_sites=[BindingSite("a", True)], concentration=100, original_line="M2: a*")
@@ -117,12 +117,7 @@ class TestPolymer:
 
         polymer = Polymer(np.array([1, 1]), [monomer1, monomer2], tbn)
 
-        # Compute once
-        polymer.compute_free_energy()
-
-        # Modify the cached value directly to test caching
-        polymer._free_energy = -999
-
-        # Should return cached value
-        energy2 = polymer.compute_free_energy()
-        assert energy2 == -999
+        # Compute twice with same parameters
+        e1 = polymer.compute_free_energy()
+        e2 = polymer.compute_free_energy()
+        assert e1 == e2

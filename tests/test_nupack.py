@@ -6,7 +6,8 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from tbnexplorer2.model import TBN, Monomer
+from tbnexplorer2.model import TBN, Monomer, BindingSite
+from tbnexplorer2.config import NUPACK_CONCENTRATIONS_PATH
 from tbnexplorer2.nupack import NupackRunner
 from tbnexplorer2.polymer_basis import Polymer
 
@@ -14,10 +15,11 @@ from tbnexplorer2.polymer_basis import Polymer
 @pytest.fixture
 def sample_polymers():
     """Create sample polymers for testing."""
-    # Create simple polymers with monomer counts
-    polymer1 = Polymer(monomer_counts=np.array([2, 0, 1]))  # 2 of monomer 0, 1 of monomer 2
-    polymer2 = Polymer(monomer_counts=np.array([1, 1, 0]))  # 1 of monomer 0, 1 of monomer 1
-    polymer3 = Polymer(monomer_counts=np.array([0, 2, 1]))  # 2 of monomer 1, 1 of monomer 2
+    # Create simple polymers with monomer counts using dummy monomers
+    monomers = [Mock(spec=Monomer) for _ in range(3)]
+    polymer1 = Polymer(np.array([2, 0, 1]), monomers)  # 2 of monomer 0, 1 of monomer 2
+    polymer2 = Polymer(np.array([1, 1, 0]), monomers)  # 1 of monomer 0, 1 of monomer 1
+    polymer3 = Polymer(np.array([0, 2, 1]), monomers)  # 2 of monomer 1, 1 of monomer 2
     return [polymer1, polymer2, polymer3]
 
 
@@ -25,9 +27,24 @@ def sample_polymers():
 def sample_tbn():
     """Create a sample TBN with monomer concentrations."""
     monomers = [
-        Monomer("A", ["x", "y"], concentration=1e-6),  # 1 μM
-        Monomer("B", ["y", "z"], concentration=2e-6),  # 2 μM
-        Monomer("C", ["x", "z"], concentration=0.5e-6),  # 0.5 μM
+        Monomer(
+            name="A",
+            binding_sites=[BindingSite("x", False), BindingSite("y", False)],
+            concentration=1e-6,
+            original_line="A: x y, 1e-6",
+        ),  # 1 μM
+        Monomer(
+            name="B",
+            binding_sites=[BindingSite("y", False), BindingSite("z", False)],
+            concentration=2e-6,
+            original_line="B: y z, 2e-6",
+        ),  # 2 μM
+        Monomer(
+            name="C",
+            binding_sites=[BindingSite("x", False), BindingSite("z", False)],
+            concentration=0.5e-6,
+            original_line="C: x z, 0.5e-6",
+        ),  # 0.5 μM
     ]
     binding_site_index = {"x": 0, "y": 1, "z": 2}
     return TBN(monomers, binding_site_index, concentration_units="M")
@@ -45,7 +62,7 @@ class TestNupackRunner:
     def test_init_defaults(self):
         """Test NupackRunner with default values."""
         runner = NupackRunner()
-        assert runner.nupack_path == "concentrations"  # Default from config
+        assert runner.nupack_path == NUPACK_CONCENTRATIONS_PATH  # Default from config
         assert runner.temperature == 37.0
 
     @patch("os.path.isfile")
@@ -181,7 +198,10 @@ class TestNupackRunner:
         """Test that computation fails without monomer concentrations."""
         runner = NupackRunner()
         # Create TBN without concentrations
-        monomers = [Monomer("A", ["x"]), Monomer("B", ["y"])]
+        monomers = [
+            Monomer("A", [BindingSite("x", False)], None, "A: x"),
+            Monomer("B", [BindingSite("y", False)], None, "B: y"),
+        ]
         binding_site_index = {"x": 0, "y": 1}
         tbn = TBN(monomers, binding_site_index)
 

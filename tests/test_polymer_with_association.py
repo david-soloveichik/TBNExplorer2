@@ -78,14 +78,9 @@ class TestPolymerWithAssociation:
 
         deltaG = [-1.0, 5.0, 3.0]
 
-        # Reset cache for each calculation
-        polymer._free_energy = None
+        # Compute at different temperatures
         energy_25 = polymer.compute_free_energy(deltaG, 25.0)
-
-        polymer._free_energy = None
         energy_37 = polymer.compute_free_energy(deltaG, 37.0)
-
-        polymer._free_energy = None
         energy_50 = polymer.compute_free_energy(deltaG, 50.0)
 
         # Free energies should be different at different temperatures
@@ -123,9 +118,7 @@ class TestPolymerWithAssociation:
         # One bond formed, so energy = -1.0
         assert polymer.compute_free_energy() == -1.0
 
-        # Reset cache and test with explicit deltaG = [-1.0, 0.0, 0.0]
-        # This should include association penalty (even though G=0, H=0, there's water density term)
-        polymer._free_energy = None
+        # Test with explicit deltaG = [-1.0, 0.0, 0.0]; includes association penalty
         energy_with_assoc = polymer.compute_free_energy([-1.0, 0.0, 0.0])
         
         # This should be different from -1.0 due to water density contribution

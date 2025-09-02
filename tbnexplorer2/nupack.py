@@ -185,4 +185,7 @@ class NupackRunner:
                     # Skip lines where last column is not a number
                     continue
 
-        return np.array(concentrations)
+        arr = np.array(concentrations)
+        if arr.size == 0:
+            raise RuntimeError("Invalid .eq file format: no concentration data parsed")
+        return arr

@@ -142,6 +142,53 @@ class NormalizRunner:
             "Please use 4ti2 (--use-4ti2) for upper bounds computation."
         )
 
+    def compute_hilbert_basis_with_strict_inequality(
+        self,
+        equations: np.ndarray,
+        inequalities: np.ndarray,
+        strict_inequality: np.ndarray,
+        store_inputs: bool = False,
+        input_base_name: Optional[str] = None,
+        context: str = "hilbert-basis-strict",
+    ) -> List[np.ndarray]:
+        """
+        Compute Hilbert basis with equations, inequalities, and a single strict inequality.
+
+        Encodes the problem in a Normaliz input using the strict_inequalities section and
+        parses the resulting Hilbert basis.
+
+        Args:
+            equations: Matrix of equations (each row is an equation)
+            inequalities: Matrix of non-strict inequalities (each row is an inequality)
+            strict_inequality: Row vector for a single strict inequality
+            store_inputs: Whether to store the generated input file for debugging
+            input_base_name: Base name used when storing inputs
+            context: Context label for stored inputs
+
+        Returns:
+            List of Hilbert basis vectors (each as a numpy array)
+
+        Raises:
+            RuntimeError: If Normaliz execution fails
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            input_file = os.path.join(tmpdir, "input_strict.in")
+
+            # Write Normaliz input with strict inequality
+            self._write_normaliz_input_with_strict(equations, inequalities, strict_inequality, input_file)
+
+            # Store input if requested
+            if store_inputs and input_base_name:
+                self._store_solver_inputs(input_file, input_base_name, context)
+
+            # Run Normaliz
+            output_file = self._run_normaliz(input_file)
+
+            # Parse output
+            hilbert_basis = self._parse_hilbert_basis(output_file)
+
+        return hilbert_basis
+
     def _write_normaliz_input_with_strict(
         self, equations: np.ndarray, inequalities: np.ndarray, strict_inequality: np.ndarray, filepath: str
     ):

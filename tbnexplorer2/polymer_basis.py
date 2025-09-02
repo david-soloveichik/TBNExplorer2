@@ -85,7 +85,6 @@ class Polymer:
         self.monomer_counts = monomer_counts
         self.monomers = monomers
         self.tbn = tbn
-        self._free_energy = None
         self._concentration = None
 
     def get_monomers_with_counts(self) -> List[Tuple[int, Monomer]]:
@@ -132,9 +131,6 @@ class Polymer:
         # Unpack deltaG parameters
         dG_bond, dG_assoc, dH_assoc = deltaG
 
-        if self._free_energy is not None:
-            return self._free_energy
-
         if self.tbn is None:
             raise ValueError("Cannot compute free energy without TBN model reference")
 
@@ -166,9 +162,7 @@ class Polymer:
             assoc_penalty = 0.0
 
         # Total free energy = bond energy + association penalty
-        self._free_energy = bond_energy + assoc_penalty
-
-        return self._free_energy
+        return bond_energy + assoc_penalty
 
     def __eq__(self, other):
         if not isinstance(other, Polymer):
