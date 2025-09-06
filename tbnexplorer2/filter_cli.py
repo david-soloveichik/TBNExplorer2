@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 TBN Explorer 2 Filter - Command Line Interface
 
@@ -9,6 +10,12 @@ import argparse
 import sys
 from pathlib import Path
 
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
+
+from .completers import TBNFilesCompleter, TextFilesCompleter, monomer_names_completer
 from .filter import PolymerFilter
 
 
@@ -36,13 +43,17 @@ Examples:
         """,
     )
 
-    parser.add_argument("tbn_file", help="Input TBN file (corresponding .tbnpolymat file must exist)")
+    tbn_arg = parser.add_argument("tbn_file", help="Input TBN file (corresponding .tbnpolymat file must exist)")
+    if TBNFilesCompleter:
+        tbn_arg.completer = TBNFilesCompleter
 
-    parser.add_argument(
+    monomer_arg = parser.add_argument(
         "monomer_names",
         nargs="*",
         help="Space-separated list of monomer names to filter by. Only named monomers can be filtered (e.g., B, C, output). Duplicates increase required multiplicity. If no monomers specified, returns all polymers (subject to other limits).",
     )
+    if argcomplete:
+        monomer_arg.completer = monomer_names_completer
 
     parser.add_argument(
         "--num", "-n", type=int, default=100, metavar="N", help="Maximum number of polymers to output (default: 100)"
@@ -56,12 +67,18 @@ Examples:
         help="Only show polymers with concentration > P%% of total concentration",
     )
 
-    parser.add_argument(
+    constraints_arg = parser.add_argument(
         "--constraints-file",
         type=str,
         metavar="FILE",
         help="File containing advanced filtering constraints (CONTAINS or EXACTLY)",
     )
+    if TextFilesCompleter:
+        constraints_arg.completer = TextFilesCompleter
+
+    # Enable argcomplete if available
+    if argcomplete:
+        argcomplete.autocomplete(parser)
 
     args = parser.parse_args()
 

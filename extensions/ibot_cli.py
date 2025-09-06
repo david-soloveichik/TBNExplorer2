@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """Command-line interface for the IBOT algorithm.
 
 This module provides the tbnexplorer2-ibot command for running the
@@ -9,8 +10,18 @@ import argparse
 import sys
 from pathlib import Path
 
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
+
 import numpy as np
 
+from tbnexplorer2.completers import (
+    TBNFilesCompleter,
+    TBNPolysFilesCompleter,
+    concentration_units_completer,
+)
 from tbnexplorer2.fourtitwo import FourTiTwoRunner
 from tbnexplorer2.model import TBN
 from tbnexplorer2.normaliz import NormalizRunner
@@ -26,8 +37,15 @@ def main():
     parser = argparse.ArgumentParser(description="Run IBOT algorithm for iterative balancing of off-target polymers")
 
     # Required arguments
-    parser.add_argument("tbn_file", type=str, help="Input .tbn file (without concentrations)")
-    parser.add_argument("on_target_file", type=str, help="Input .tbnpolys file specifying on-target polymers")
+    tbn_arg = parser.add_argument("tbn_file", type=str, help="Input .tbn file (without concentrations)")
+    if TBNFilesCompleter:
+        tbn_arg.completer = TBNFilesCompleter
+
+    target_arg = parser.add_argument(
+        "on_target_file", type=str, help="Input .tbnpolys file specifying on-target polymers"
+    )
+    if TBNPolysFilesCompleter:
+        target_arg.completer = TBNPolysFilesCompleter
 
     # Optional arguments
     parser.add_argument(
@@ -35,12 +53,28 @@ def main():
         action="store_true",
         help="Use 4ti2 instead of Normaliz for both Hilbert basis computations (polymer basis and irreducible canonical reactions)",
     )
-    parser.add_argument(
+    generate_arg = parser.add_argument(
         "--generate-tbn",
         nargs=2,
         metavar=("C", "UNITS"),
         help="Generate .tbn file with concentrations using base value C and specified units",
     )
+    # Add custom completer for the units parameter
+    if argcomplete:
+
+        def generate_tbn_completer(prefix="", parsed_args=None, **kwargs):
+            # Check if we're completing the second argument (units)
+            if (
+                parsed_args
+                and hasattr(parsed_args, "generate_tbn")
+                and parsed_args.generate_tbn
+                and len(parsed_args.generate_tbn) == 1
+            ):
+                # We're completing the units argument
+                return concentration_units_completer(prefix, **kwargs)
+            return []
+
+        generate_arg.completer = generate_tbn_completer
     parser.add_argument(
         "--output-prefix", type=str, help="Prefix for output files (default: input filename without extension)"
     )
@@ -49,7 +83,7 @@ def main():
         action="store_true",
         help="Generate text file showing all irreducible canonical reactions ordered by IBOT iteration",
     )
-    parser.add_argument(
+    upper_arg = parser.add_argument(
         "--upper-bound-on-polymers",
         type=str,
         metavar="TBNPOLYS_FILE",
@@ -57,12 +91,18 @@ def main():
         "Note: This functionality is not yet optimized and might take longer than enumerating all canonical reactions. "
         "Incompatible with --generate-tbn.",
     )
+    if TBNPolysFilesCompleter:
+        upper_arg.completer = TBNPolysFilesCompleter
 
     parser.add_argument(
         "--store-solver-inputs",
         action="store_true",
         help="Store copies of input files for Normaliz/4ti2 in solver-inputs directory for debugging",
     )
+
+    # Enable argcomplete if available
+    if argcomplete:
+        argcomplete.autocomplete(parser)
 
     args = parser.parse_args()
 

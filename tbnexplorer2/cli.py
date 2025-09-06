@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 TBN Explorer 2 - Command Line Interface
 
@@ -10,7 +11,21 @@ import os
 import sys
 from pathlib import Path
 
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
+
 from .coffee import COFFEE_CLI_PATH, COFFEERunner
+from .completers import (
+    TBNFilesCompleter,
+    TBNPolysFilesCompleter,
+    coffee_path_completer,
+    fourtitwo_path_completer,
+    normaliz_path_completer,
+    nupack_path_completer,
+    parametrized_completer,
+)
 from .config import NUPACK_CONCENTRATIONS_PATH
 from .fourtitwo import FOURTI2_PATH, FourTiTwoRunner
 from .model import TBN
@@ -57,15 +72,21 @@ TBN File Format:
         """,
     )
 
-    parser.add_argument("input_file", help="Input TBN file")
+    input_arg = parser.add_argument("input_file", help="Input TBN file")
+    if TBNFilesCompleter:
+        input_arg.completer = TBNFilesCompleter
 
-    parser.add_argument(
+    output_arg = parser.add_argument(
         "--output", "-o", help="Output file for polymer basis (default: [input]-polymer-basis.tbnpolys)"
     )
+    if TBNPolysFilesCompleter:
+        output_arg.completer = TBNPolysFilesCompleter
 
-    parser.add_argument(
+    normaliz_arg = parser.add_argument(
         "--normaliz-path", default=NORMALIZ_PATH, help=f"Path to Normaliz executable (default: {NORMALIZ_PATH})"
     )
+    if argcomplete:
+        normaliz_arg.completer = normaliz_path_completer
 
     parser.add_argument(
         "--use-4ti2",
@@ -73,9 +94,11 @@ TBN File Format:
         help="Use 4ti2 instead of Normaliz for Hilbert basis computation",
     )
 
-    parser.add_argument(
+    fourtitwo_arg = parser.add_argument(
         "--4ti2-path", default=FOURTI2_PATH, help=f"Path to 4ti2 installation directory (default: {FOURTI2_PATH})"
     )
+    if argcomplete:
+        fourtitwo_arg.completer = fourtitwo_path_completer
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
 
@@ -95,9 +118,11 @@ TBN File Format:
         help="Do not compute polymer free energies (also disables concentration computation)",
     )
 
-    parser.add_argument(
+    coffee_arg = parser.add_argument(
         "--coffee-path", default=COFFEE_CLI_PATH, help=f"Path to COFFEE executable (default: {COFFEE_CLI_PATH})"
     )
+    if argcomplete:
+        coffee_arg.completer = coffee_path_completer
 
     parser.add_argument(
         "--user-friendly-polymer-basis",
@@ -105,12 +130,14 @@ TBN File Format:
         help="Save user-friendly polymer basis to [input]-polymer-basis.tbnpolys file",
     )
 
-    parser.add_argument(
+    param_arg = parser.add_argument(
         "--parametrized",
         nargs="*",
         metavar="VAR=VALUE",
         help="Variable assignments for parametrized .tbn files (e.g., a=20 b=100.4)",
     )
+    if argcomplete:
+        param_arg.completer = parametrized_completer
 
     parser.add_argument(
         "--store-solver-inputs",
@@ -142,11 +169,17 @@ TBN File Format:
         help="Use Nupack's concentrations solver instead of COFFEE for equilibrium calculations",
     )
 
-    parser.add_argument(
+    nupack_arg = parser.add_argument(
         "--nupack-path",
         default=NUPACK_CONCENTRATIONS_PATH,
         help=f"Path to Nupack concentrations executable (default: {NUPACK_CONCENTRATIONS_PATH})",
     )
+    if argcomplete:
+        nupack_arg.completer = nupack_path_completer
+
+    # Enable argcomplete if available
+    if argcomplete:
+        argcomplete.autocomplete(parser)
 
     args = parser.parse_args()
 

@@ -1,149 +1,218 @@
 # Shell Completions for TBNExplorer2
 
-This project includes zsh shell completions for all TBNExplorer2 CLI tools.
+This project uses [argcomplete](https://github.com/kislyuk/argcomplete) to provide intelligent tab completion for all TBNExplorer2 CLI tools.
 
 ## Features
 
-The completion scripts provide intelligent tab completion for:
+The argcomplete-based completion system provides:
 
-- **Command options and flags**: All command-line options are available via tab completion
-- **File paths**: Automatic completion for relevant file types:
-  - `.tbn` files for input
-  - `.tbnpolys` files for polymer specifications
-  - `.tbnpolymat` files (automatically inferred)
-  - `.txt` files for constraints
-- **Value completions**: 
+- Automatic completion generation from argparse definitions
+- Multi-shell support: bash (4.2+) and zsh
+- Intelligent completions:
+  - Command options and flags with descriptions
+  - File path completion for specific file types (`.tbn`, `.tbnpolys`, `.txt`)
   - Concentration units (nM, pM, uM, mM, M)
-  - Parameter formats for `--parametrized` option
-- **Dynamic completions**:
-  - Monomer names extracted from `.tbn` files (for `tbnexplorer2-filter`)
+  - Dynamic monomer name extraction from `.tbn` files
+  - Parameter format hints for `--parametrized` option
+- Always up-to-date: completions reflect any changes to command-line arguments
+
+## Requirements
+
+- Python 3.8+
+- argcomplete package (automatically installed with tbnexplorer2)
+- bash 4.2+ or zsh
+
+### macOS Users
+macOS ships with an outdated version of bash (3.2). You can either:
+1. Use zsh (recommended, default on macOS 10.15+)
+2. Install a newer bash version: `brew install bash`
 
 ## Installation
 
-### Quick Install (Recommended)
+### Method 1: Per-Command Registration (Recommended)
 
-Run the installation script:
+Register each command in your shell configuration:
+
+For bash, add to `~/.bashrc`:
 
 ```bash
-./install-completions.sh
+eval "$(register-python-argcomplete tbnexplorer2)"
+eval "$(register-python-argcomplete tbnexplorer2-filter)"
+eval "$(register-python-argcomplete tbnexplorer2-ibot)"
+
+# Reload your shell configuration
+source ~/.bashrc
 ```
 
-This will:
-1. Install completions to the appropriate directory
-2. Update your `~/.zshrc` if needed
-3. Provide instructions to activate completions
+For zsh, add to `~/.zshrc` (bash completion emulation is required):
 
-To activate immediately:
-```bash
+```zsh
+autoload -U bashcompinit
+bashcompinit
+eval "$(register-python-argcomplete tbnexplorer2)"
+eval "$(register-python-argcomplete tbnexplorer2-filter)"
+eval "$(register-python-argcomplete tbnexplorer2-ibot)"
+
+# Reload your shell configuration
 source ~/.zshrc
 ```
 
-### Manual Installation
+### Method 2: Static zsh Completion Files (No RC edits)
 
-1. Copy the completion files to your zsh completions directory:
-   ```bash
-   cp completions/zsh/_tbnexplorer2* ~/.local/share/zsh/site-functions/
-   ```
+If your `~/.zshrc` already adds a directory to `fpath` and runs `compinit`, you can drop static completion files there. A common user path is `~/.local/share/zsh/site-functions`.
 
-2. Add the directory to your `fpath` in `~/.zshrc`:
-   ```bash
-   fpath=(~/.local/share/zsh/site-functions $fpath)
-   ```
+```bash
+mkdir -p ~/.local/share/zsh/site-functions
+register-python-argcomplete --shell zsh tbnexplorer2 > ~/.local/share/zsh/site-functions/_tbnexplorer2
+register-python-argcomplete --shell zsh tbnexplorer2-filter > ~/.local/share/zsh/site-functions/_tbnexplorer2-filter
+register-python-argcomplete --shell zsh tbnexplorer2-ibot > ~/.local/share/zsh/site-functions/_tbnexplorer2-ibot
 
-3. Ensure `compinit` is called in your `~/.zshrc`:
-   ```bash
-   autoload -Uz compinit && compinit
-   ```
+# Reload zsh completions
+exec zsh   # or: rm -f ~/.zcompdump-$(hostname) && compinit
+```
 
-4. Reload your shell configuration:
-   ```bash
-   source ~/.zshrc
-   ```
+Ensure the target directory is in your `fpath` before `compinit` runs.
 
-### Installation with pip/setup.py
+Alternatively, use the helper script to install these files automatically:
 
-When installing the package with pip, completions are automatically installed to the system directory:
+```bash
+./activate-completions.sh --install-zsh-static
+```
+
+### Method 3: Using pip Installation
+
+When installing with pip, argcomplete is automatically installed as a dependency:
 
 ```bash
 pip install .
+# or for development
+pip install -e .
 ```
 
-## Usage Examples
+Then activate completions using one of the methods above.
+
+## Usage
+
+Once activated, use tab completion with any TBNExplorer2 command:
 
 ### tbnexplorer2
 ```bash
-# Tab completion for input files
-tbnexplorer2 <TAB>           # Shows .tbn files
+# Complete input files
+tbnexplorer2 <TAB>                     # Shows .tbn files
 
-# Tab completion for options
-tbnexplorer2 --<TAB>         # Shows all available options
+# Complete options
+tbnexplorer2 --<TAB>                   # Shows all available options
 
-# Tab completion for parametrized variables
-tbnexplorer2 file.tbn --parametrized <TAB>   # Shows format hint
+# Complete file outputs
+tbnexplorer2 file.tbn --output <TAB>   # Shows .tbnpolys files
+
+# Complete parametrized variables
+tbnexplorer2 file.tbn --parametrized <TAB>  # Shows format hints
 ```
 
 ### tbnexplorer2-filter
 ```bash
-# Tab completion for monomer names (extracted from .tbn file)
-tbnexplorer2-filter example.tbn <TAB>    # Shows available monomer names
+# Complete monomer names (dynamically extracted from .tbn file)
+tbnexplorer2-filter example.tbn <TAB>  # Shows available monomer names
 
-# Tab completion for constraints file
-tbnexplorer2-filter example.tbn --constraints-file <TAB>   # Shows .txt files
+# Complete constraints file
+tbnexplorer2-filter example.tbn --constraints-file <TAB>  # Shows .txt files
 ```
 
 ### tbnexplorer2-ibot
 ```bash
-# Tab completion for on-target polymers file
-tbnexplorer2-ibot input.tbn <TAB>        # Shows .tbnpolys files
+# Complete on-target polymers file
+tbnexplorer2-ibot input.tbn <TAB>      # Shows .tbnpolys files
 
-# Tab completion for units
-tbnexplorer2-ibot input.tbn target.tbnpolys --generate-tbn 100 <TAB>  # Shows unit options
+# Complete concentration units
+tbnexplorer2-ibot input.tbn target.tbnpolys --generate-tbn 100 <TAB>  # Shows units
+```
+
+## Testing Completions
+
+To verify completions are set up:
+
+```bash
+# Run the test command (probes per-command registration)
+./activate-completions.sh --test
+
+# Manual interactive test
+tbnexplorer2 --<TAB><TAB>  # Should show available options
 ```
 
 ## Troubleshooting
 
-### Completions not working
+### Completions Not Working
 
-1. Verify completions are installed:
+1. **Check argcomplete is installed**:
    ```bash
-   ls ~/.local/share/zsh/site-functions/_tbnexplorer2*
+   python3 -c "import argcomplete"
    ```
 
-2. Check that the directory is in your fpath:
+2. **Verify activation**:
+   - For per-command: Ensure `register-python-argcomplete` eval commands are in your shell RC file (and `bashcompinit` for zsh)
+   - For static zsh files: Ensure the directory is in `fpath` before `compinit`
+
+3. **Check shell compatibility**:
    ```bash
-   echo $fpath | grep -o '[^ ]*zsh/site-functions'
+   echo $BASH_VERSION  # Should be 4.2+
+   echo $ZSH_VERSION   # Any version
    ```
 
-3. Rebuild completion cache:
+4. **Reload shell configuration**:
    ```bash
-   rm -f ~/.zcompdump && compinit
+   source ~/.bashrc  # or ~/.zshrc
+   # Or start a new terminal
    ```
 
-4. Ensure you're using zsh:
-   ```bash
-   echo $SHELL
-   ```
+### macOS-Specific Issues
 
-### Updating completions
-
-After updating the completion scripts, rebuild the completion cache:
+If using the system bash (3.2):
 ```bash
-rm -f ~/.zcompdump && compinit
+# Switch to zsh
+chsh -s /bin/zsh
+
+# Or install newer bash
+brew install bash
+echo '/opt/homebrew/bin/bash' | sudo tee -a /etc/shells
+chsh -s /opt/homebrew/bin/bash
 ```
+
+## How It Works
+
+Argcomplete works by:
+1. Intercepting tab completion requests from the shell
+2. Running the Python script in completion mode to generate suggestions
+3. Returning appropriate completions based on context
+
+Per-command registration and static zsh files do not require wrapper markers.
+
+The custom completers in `tbnexplorer2/completers.py` provide specialized completion logic for:
+- File types with specific extensions
+- Dynamic extraction of monomer names from .tbn files
+- Concentration units and parameter formats
 
 ## Development
 
-The completion scripts are located in `completions/zsh/`:
-- `_tbnexplorer2`: Main tool completions
-- `_tbnexplorer2-filter`: Filter tool completions  
-- `_tbnexplorer2-ibot`: IBOT algorithm tool completions
+When adding new command-line options:
 
-To test changes:
-1. Edit the completion script
-2. Copy to your completions directory
-3. Reload completions: `unfunction _tbnexplorer2 2>/dev/null; autoload -Uz _tbnexplorer2`
-4. Test with tab completion
+1. **No manual updates needed**: Completions are automatically generated from argparse
+2. **For custom completions**: Add a completer function to `tbnexplorer2/completers.py`
+3. **Assign the completer**: Set `argument.completer = your_completer_function`
+
+Example:
+```python
+# In your CLI file
+from .completers import MyCustomCompleter
+
+arg = parser.add_argument("--my-option")
+arg.completer = MyCustomCompleter
+```
 
 ## Contributing
 
-When adding new command-line options to the tools, please update the corresponding completion script in `completions/zsh/`.
+When adding new CLI tools or modifying arguments:
+- Ensure the `# PYTHON_ARGCOMPLETE_OK` marker is present after the shebang
+- Import and enable argcomplete: `argcomplete.autocomplete(parser)`
+- Add custom completers as needed in `tbnexplorer2/completers.py`
+- Test completions work with the new arguments

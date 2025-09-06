@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy>=1.20.0",
+        "argcomplete>=3.1.0",
     ],
     entry_points={
         "console_scripts": [
@@ -15,13 +16,6 @@ setup(
         ],
     },
     include_package_data=True,
-    data_files=[
-        ('share/zsh/site-functions', [
-            'completions/zsh/_tbnexplorer2',
-            'completions/zsh/_tbnexplorer2-filter',
-            'completions/zsh/_tbnexplorer2-ibot',
-        ]),
-    ],
     python_requires=">=3.8",
     author="TBN Explorer Team",
     description="A Python library and CLI tool for thermodynamics of binding networks (TBN) analysis",
