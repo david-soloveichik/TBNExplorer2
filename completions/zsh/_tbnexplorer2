@@ -1,0 +1,64 @@
+#compdef tbnexplorer2
+
+# Zsh completion for tbnexplorer2
+
+_tbnexplorer2() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    local -a main_options
+    main_options=(
+        '(--help -h)'{--help,-h}'[Show help message and exit]'
+        '(--verbose -v)'{--verbose,-v}'[Enable verbose output]'
+        '(--output -o)'{--output,-o}'[Output file for polymer basis]:output file:_files -g "*.tbnpolys"'
+        '--check-only[Only check star-limiting restriction, do not compute polymer basis]'
+        '--user-friendly-polymer-basis[Save user-friendly polymer basis to file]'
+        '--no-concentrations[Do not compute equilibrium concentrations]'
+        '--no-free-energies[Do not compute polymer free energies]'
+        '--store-solver-inputs[Store copies of input files for debugging]'
+    )
+
+    local -a solver_options
+    solver_options=(
+        '--use-4ti2[Use 4ti2 instead of Normaliz for Hilbert basis]'
+        '--normaliz-path[Path to Normaliz executable]:normaliz path:_files -g "*normaliz*"'
+        '--4ti2-path[Path to 4ti2 installation directory]:4ti2 path:_directories'
+    )
+
+    local -a equilibrium_options
+    equilibrium_options=(
+        '--temp[Temperature in Celsius (default: 37)]:temperature:'
+        '--deltaG-assoc[Association free energy parameters]:dG_assoc:_message "dG_assoc value":dH_assoc:_message "dH_assoc value"'
+        '--use-nupack-concentrations[Use Nupack instead of COFFEE for equilibrium]'
+        '--coffee-path[Path to COFFEE executable]:coffee path:_files'
+        '--nupack-path[Path to Nupack concentrations executable]:nupack path:_files'
+    )
+
+    local -a parametrized_options
+    parametrized_options=(
+        '--parametrized[Variable assignments for parametrized .tbn files]:*:variable assignments:->params'
+    )
+
+    _arguments -C \
+        "${main_options[@]}" \
+        "${solver_options[@]}" \
+        "${equilibrium_options[@]}" \
+        "${parametrized_options[@]}" \
+        '1:input file:_files -g "*.tbn"' \
+        && return 0
+
+    case $state in
+        params)
+            # Suggest parameter format
+            _message "Format: VAR=VALUE (e.g., conc1=90.3 conc2=50)"
+            ;;
+    esac
+}
+
+# Helper function to complete .tbn files
+_tbn_files() {
+    _files -g '*.tbn'
+}
+
+# Register the completion
+_tbnexplorer2 "$@"

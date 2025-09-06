@@ -1,0 +1,54 @@
+#compdef tbnexplorer2-filter
+
+# Zsh completion for tbnexplorer2-filter
+
+_tbnexplorer2_filter() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    local -a options
+    options=(
+        '(--help -h)'{--help,-h}'[Show help message and exit]'
+        '(--num -n)'{--num,-n}'[Maximum number of polymers to output (default: 100)]:number:'
+        '(--percent-limit -p)'{--percent-limit,-p}'[Only show polymers with concentration > P% of total]:percent:'
+        '--constraints-file[File containing advanced filtering constraints]:constraints file:_files -g "*.txt"'
+    )
+
+    # Dynamic monomer name completion
+    local tbn_file
+    local -a monomer_names
+
+    # Check if we have a .tbn file specified
+    if [[ -n "${line[1]}" && -f "${line[1]}" ]]; then
+        tbn_file="${line[1]}"
+        
+        # Try to extract monomer names from the .tbn file
+        # Look for lines with monomer names (format: "name:" or ">name")
+        if [[ -r "$tbn_file" ]]; then
+            monomer_names=($(grep -E '^[^#]*[>:]' "$tbn_file" 2>/dev/null | \
+                          sed -E 's/^[[:space:]]*([^:>]+):.*/\1/; s/.*>([^[:space:],]+).*/\1/' | \
+                          grep -v '^[[:space:]]*$' | sort -u))
+        fi
+    fi
+
+    _arguments -C \
+        "${options[@]}" \
+        '1:TBN file:_files -g "*.tbn"' \
+        '*:monomer names:->monomers' \
+        && return 0
+
+    case $state in
+        monomers)
+            if [[ ${#monomer_names} -gt 0 ]]; then
+                # Offer discovered monomer names
+                _values 'monomer names' "${monomer_names[@]}"
+            else
+                # Generic message if no names found
+                _message 'monomer name (e.g., B, C, output)'
+            fi
+            ;;
+    esac
+}
+
+# Register the completion
+_tbnexplorer2_filter "$@"

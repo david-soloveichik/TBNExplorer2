@@ -14,6 +14,14 @@ setup(
             "tbnexplorer2-ibot=extensions.ibot_cli:main",
         ],
     },
+    include_package_data=True,
+    data_files=[
+        ('share/zsh/site-functions', [
+            'completions/zsh/_tbnexplorer2',
+            'completions/zsh/_tbnexplorer2-filter',
+            'completions/zsh/_tbnexplorer2-ibot',
+        ]),
+    ],
     python_requires=">=3.8",
     author="TBN Explorer Team",
     description="A Python library and CLI tool for thermodynamics of binding networks (TBN) analysis",
