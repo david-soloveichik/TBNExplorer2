@@ -7,12 +7,12 @@ Tab completion for all TBNExplorer2 commands, automatically generated from the c
 **Choose your installation method:**
 
 - **Option A: Dynamic Loading** (Recommended for most users)  
-  Add a few lines to your shell config file. 
+  Add a few lines to your shell config file 
 
 - **Option B: Static Files** (For zsh users who prefer not editing config files)  
-  Install completion files once. 
+  Install completion file wrappers. Note: they don't contain the actual completions, just calls to generate them
 
-Both methods provide the same features and automatically reflect any changes to command options.
+Both methods provide the same features and automatically reflect any changes to command options in the code.
 
 ## Features
 
@@ -176,16 +176,3 @@ from .completers import MyCustomCompleter
 argument = parser.add_argument("--my-option")
 argument.completer = MyCustomCompleter
 ```
-
-### Important Notes
-
-- **All completion methods auto-update:** Whether using dynamic loading or static files, completions automatically reflect code changes
-- **Static files are wrappers:** They don't contain the actual completions, just calls to generate them
-- **No manual regeneration needed:** Changes to command options are picked up automatically
-
-## Summary
-
-1. Install completions once using either method
-2. Completions automatically stay current with code changes
-3. Use `<TAB>` to complete commands, files, and options
-4. No maintenance required after initial setup
